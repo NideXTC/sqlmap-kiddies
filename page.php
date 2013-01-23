@@ -39,8 +39,8 @@
           <a class="brand" href="#">SQLMap Kiddies</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li class="active"><a href="#">Site</a></li>
-              <li><a href="page.php">Page</a></li>
+              <li><a href="index.php">Site</a></li>
+              <li class="active"><a href="#">Page</a></li>
               <li><a href="lien.php">Lien</a></li>
             </ul>
           </div><!--/.nav-collapse -->
