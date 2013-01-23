@@ -53,22 +53,28 @@
         <fieldset>
           <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
           <form method="POST">
-            <input id="url" name="url" type="text" /><br />
+            <input id="url" name="url" type="text" size="50" /><br />
             <input id="submit" type="submit" name="submit" value="Submit" />
           </form>
         </fieldset>
-
+        <hr />
+        <legend>Result<span class='icon-arrow-right'></span></legend>
       <?php
-
       if(isset($_POST['url']) && !empty($_POST['url'])){
-        
+        $output=array();
+        $return_var = 0;
+        exec("python modules/sqlmap/sqlmap.py --batch -u ". $_POST['url'], $output);
+        $max = count($output);
+        for($i=0;$i<$max;$i++){
+          echo $output[$i] . "<br />";
+        }
       }else{
-        
+        echo "<p>Unknown url</p>";
       }
       ?>
       </div>
 
-      <!-- Example row of columns -->
+      <!-- Example row of columns
       <div class="row">
         <div class="span4">
           <h2>Heading</h2>
@@ -85,12 +91,12 @@
           <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
           <p><a class="btn" href="#">View details &raquo;</a></p>
         </div>
-      </div>
+      </div> -->
 
       <hr>
 
       <footer>
-        <p>&copy; Company 2012</p>
+        <p>&copy; SQLMap Kiddies - CSLI Developpement</p>
       </footer>
 
     </div> <!-- /container -->
