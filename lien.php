@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -8,6 +7,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
+     <script src="js/jquery.js"></script>
+    <script src="js/main.js"></script>
+    
+    
     <!-- Le styles -->
     <link href="css/bootstrap.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
@@ -25,8 +28,20 @@
     <![endif]-->   
   </head>
 
-  <body>
-    <?php require_once("include/menu.php"); ?>
+  <body<?php if(isset($_POST["url"]) && !empty($_POST["url"]) ) echo " onload = 'terminal()'"; ?>>
+    <?php
+    
+    require_once("include/menu.php");
+    require_once("class/Sqlmap.class.php");
+    
+    $sqlmap = new Sqlmap(); 
+    
+    if(isset($_POST["url"]) && !empty($_POST["url"]) ){
+        $sqlmap->launch($_POST["url"]); 
+    }
+    
+    
+    ?>
     <div class="container">
       <div class="hero-unit">
         <fieldset>
@@ -47,12 +62,7 @@
 
     </div> <!-- /container -->
 
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-    <script src="js/bootstrap-min.js"></script>
-    <script src="js/main.js"></script>
+   
   </body>
 </html>
 

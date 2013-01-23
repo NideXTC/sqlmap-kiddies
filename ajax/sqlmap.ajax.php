@@ -1,8 +1,10 @@
 <?php
-if(isset($url) && !empty($url)){
+/*
+ * 
+ if(isset($url) && !empty($url)){
   $output=array();
   $return_var = 0;
-  exec("python modules/sqlmap/sqlmap.py --batch -u ". $url, $output);
+  exec("python ../modules/sqlmap/sqlmap.py -u ". $url, $output);
   $max = count($output);
   for($i=0;$i<$max;$i++){
     echo $output[$i] . "<br />";
@@ -10,4 +12,8 @@ if(isset($url) && !empty($url)){
 }else{
   echo "-1";
 }
+ */
+
+
+
 ?>
