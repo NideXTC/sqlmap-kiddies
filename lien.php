@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Bootstrap, from Twitter</title>
+    <title>SQLMap Kiddies</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -49,12 +49,23 @@
     </div>
 
     <div class="container">
-
-      <!-- Main hero unit for a primary marketing message or call to action -->
       <div class="hero-unit">
-        <h1>Hello, world!</h1>
-        <p>This is a template for a simple marketing or informational website. It includes a large callout called the hero unit and three supporting pieces of content. Use it as a starting point to create something more unique.</p>
-        <p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+        <fieldset>
+          <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
+          <form method="POST">
+            <input id="url" name="url" type="text" /><br />
+            <input id="submit" type="submit" name="submit" value="Submit" />
+          </form>
+        </fieldset>
+
+      <?php
+
+      if(isset($_POST['url']) && !empty($_POST['url'])){
+        
+      }else{
+        
+      }
+      ?>
       </div>
 
       <!-- Example row of columns -->
