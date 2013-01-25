@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description" content="">
         <meta name="author" content="">
-
+        <link href="favicon.ico" rel="icon" type="image/x-icon" />
         <script src="js/jquery.js"></script>
         <script src="js/main.js"></script>
 

@@ -201,6 +201,8 @@ class SiteMapGenerator {
 	
 	
 	public function generateSiteMap() {
+
+		$links="" ;
 		
 		foreach($this->hash as $url=>$title) {
                     
