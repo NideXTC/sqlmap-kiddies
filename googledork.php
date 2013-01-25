@@ -30,7 +30,7 @@
     <body>
 
 
-        <?php  $page = "lien" ; require_once("include/menu.php"); ?>
+        <?php $page = "googledork" ;  require_once("include/menu.php"); ?>
         <div class="container">
             <div class="hero-unit">
                 <fieldset>

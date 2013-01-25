@@ -6,11 +6,11 @@
  */
 
 /**
- * Description of xml
+ * Description of ParseXML
  *
  * @author nidextc
  */
-class Xml {
+class ParseXML {
     //put your code here
 }
 

@@ -27,7 +27,7 @@
   </head>
 
   <body>
-    <?php require_once("include/menu.php"); ?>
+    <?php  $page = "page" ; require_once("include/menu.php"); ?>
     <div class="container">
 
       <!-- Main hero unit for a primary marketing message or call to action -->

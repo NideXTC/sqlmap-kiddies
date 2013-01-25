@@ -1,8 +1,7 @@
-/*
+
 $(document).ready(function(){
     $("#submit").click(function(){  
 
-       alert("totootot");
        $.ajax({
            type: "POST",
            url: "ajax/sqlmap.ajax.php",
@@ -10,18 +9,27 @@ $(document).ready(function(){
        }).done(function( msg ) {
            if($.trim(msg) != "-1"){
                $("#result").html(msg) ; 
-               window.setInterval(function(){ terminal($("#url").val()) }, 1000)
            }
            else   $("#result").html("bad result") ;   
        }); 
-   });  
-});*/
+   }); 
+   
+   $("#submitWebsite").click(function(){  
+      
 
-function terminal(){
-    $.ajax({
-        type: "POST",
-        url: "ajax/lireFichier.ajax.php"
-    }).done(function( msg ){
-        $("#result").html(msg) ;
-    }); 
-}
+      $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes few minutes... </div>') ; 
+     
+       $.ajax({
+           type: "POST",
+           url: "ajax/sitemap.ajax.php",
+           data: {url : $("#url").val()}
+       }).done(function( msg ) {
+           if($.trim(msg) != "-1"){
+               $("#result").html(msg) ; 
+           }
+           else   $("#result").html("bad result") ;   
+       }); 
+   }); 
+   
+   
+}); 
