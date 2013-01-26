@@ -166,6 +166,7 @@ class SiteMapGenerator {
 	 *
 	 */
 	public function navigate() {
+            
 		$this->html = file_get_contents($this->actual);
 		
 		if ($this->html) { // make sure we have something to parse
@@ -207,9 +208,9 @@ class SiteMapGenerator {
 		foreach($this->hash as $url=>$title) {
                     
                     if(preg_match('/\?/', $url))
-                        $links .= '<i class="icon-ok"></i> <span style="color : green;">'.$url.'</span><br />';
+                        $links .= '<span class="icon-ok"></span> <span class="green">'.$url.'</span><div class="resultsql"></div>';
                     else
-                        $links .= '<i class="icon-remove"></i> <span style="color : red;">'.$url.'</span><br />';
+                        $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
                 
 		}
 		

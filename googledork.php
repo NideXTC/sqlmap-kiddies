@@ -30,15 +30,14 @@
     <body>
 
 
-        <?php $page = "googledork" ;  require_once("include/menu.php"); ?>
+        <?php $page = "googledork";
+        require_once("include/menu.php"); ?>
         <div class="container">
             <div class="hero-unit">
                 <fieldset>
                     <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
-                    <form method="POST">
-                        <input id="url" name="url" type="text" size="50" /><br />
-                        <input id="submit" type="button" name="submit" value="Submit" />
-                    </form>
+                    <input id="url" name="url" type="text" size="50" /><br />
+                    <input id="submit" type="button" name="submit" value="Submit" />
                 </fieldset>
                 <legend>Result<span class='icon-arrow-right'></span></legend>
                 <div class="hero-unit result" id="result"></div>

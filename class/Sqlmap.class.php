@@ -6,10 +6,18 @@ class Sqlmap {
         
     }
 
-    public function launch($url) {
+    public function launch($url , $options = null) {
+        
+        $option ='';
+        
+        if($options != null){
+            foreach ($options as $key => $value) {
+                $option .= $value." ";
+            }
+        }
 
         // We used proc_open for a futur update with stdin
-        $cmd = "python ../modules/sqlmap/sqlmap.py -u " . $url;
+        $cmd = "python ../modules/sqlmap/sqlmap.py -u " . $url." ".$option;
 
         $descriptorspec = array(
             0 => array("pipe", "r"), 
