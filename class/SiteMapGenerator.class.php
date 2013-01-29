@@ -63,10 +63,14 @@ class SiteMapGenerator {
 	 */
 	public function __construct($site,$navigate=true) {
 		$this->site = $site;
-		$this->hash = array();
-		if($navigate) {
-			$this->link($site);
-		}
+		$this->hash = array();              
+                $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+                
+                 if(!file_exists("../sitemap/".$txtsite.".txt")){
+                    if($navigate) {
+                           $this->link($site);
+                    }
+                }
 	}
 
 	/**
@@ -204,6 +208,13 @@ class SiteMapGenerator {
 	public function generateSiteMap() {
 
 		$links="" ;
+                $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+                
+                 if(file_exists("../sitemap/".$txtsite.".txt")){                    
+                    $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");                 
+                    return $txtsitemap;
+                }
+                else{
 		
 		foreach($this->hash as $url=>$title) {
                     
@@ -212,9 +223,14 @@ class SiteMapGenerator {
                     else
                         $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
                 
-		}
-		
-                return $links;
+                    }
+                    $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+                    file_put_contents("../sitemap/".$txtsite.".txt",$links );
+                    return $links;
+                
+                }
+                
+                
 	}
 	
 }
