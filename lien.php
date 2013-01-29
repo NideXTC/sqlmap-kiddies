@@ -8,6 +8,7 @@
         <meta name="author" content="">
         <link href="favicon.ico" rel="icon" type="image/x-icon" />
         <script src="js/jquery.js"></script>
+        <script src="js/bootstrap.min.js"></script>
         <script src="js/main.js"></script>
 
         <!-- Le styles -->
@@ -35,14 +36,38 @@
         <div class="container">
             <div class="hero-unit">
                 <fieldset>
-                    <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
-                    <input id="url" name="url" type="text" size="50" /><br />
-                    <input id="submit" type="button" name="submit" value="Submit" />
+                    <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
+                    <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
+                        <span class="add-on">http://</span>
+                        <input class="span2" id="url" type="text">
+                        <span class="add-on">/</span>
+                    </div>
+                    <input id="submitWebsite" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
+                    <br />
+                    <br />
+                    <form id="formsqlmap" >
+                      <label for="tor" class="checkbox span2">Activer TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
+                      <label for="data" class="checkbox span2">Activer POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
+                      <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
+                      <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
+                      <br /><label for="dbms" class="span2">Select your database :</label>
+                      <select id="dbms" name="dbms" class="span2">
+                        <option value="" selected="selected">Choose your DBMS</option>
+                        <option value="--dbms mysql" >MySQL</option>
+                        <option value="--dbms oracle" >Oracle</option>
+                        <option value="--dbms microsoft sql server" >Microsoft SQL Server</option>
+                        <option value="--dbms postgresql" >PostgreSQL</option>
+                        <option value="--dbms microsoft access" >Microsoft Access</option>
+                        <option value="--dbms sqlite" >SQLite</option>
+                        <option value="--dbms firebird" >Firebird</option>
+                        <option value="--dbms sybase" >Sybase</option>
+                        <option value="--dbms sap maxdb" >SAP MaxDB</option>
+                      </select>
+                    </form>
                 </fieldset>
                 <legend>Result<span class='icon-arrow-right'></span></legend>
-                <div class="hero-unit result" id="result"></div>
+                <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
-
             <hr>
 
             <footer>
