@@ -19,7 +19,7 @@ $(document).ready(function(){
    
    $("#submitWebsite").click(function(){  
       
-      $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes few minutes... </div>') ; 
+      $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes a few minutes... </div>') ; 
      
        $.ajax({
            type: "POST",
@@ -37,7 +37,7 @@ $(document).ready(function(){
                     $.ajax({
                         type: "POST",
                         url: "ajax/sqlmap.ajax.php",
-                        data: {url : $("#url").val() , options : $("#formsqlmap").serialize()}
+                        data: {url : $("#url").val() , options : $("#formsqlmap").serializeArray()}
                     }).done(function( msg ) {
                         
                         if(msg.search("[CRITICAL] no parameter(s) found for testing") == -1){
@@ -58,15 +58,14 @@ $(document).ready(function(){
    });
 
    $("#submitLink").click(function(){  
-    $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes few minutes... </div>') ; 
+    $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 350px;">Testing URL, it may takes a few minutes... </div>') ; 
     $.ajax({
         type: "POST",
         url: "ajax/sqlmap.ajax.php",
-        data: {url : "http://" + $("#url").val()}
+        data: {url : "http://" + $("#url").val(), options : $("#formsqlmap").serializeArray()}
     }).done(function( msg ) {
         $("#result").html(msg) ; 
-    }); 
-   }); 
-   
-   
+    });
+   });
+
 }); 

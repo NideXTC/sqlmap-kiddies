@@ -10,11 +10,11 @@ class Sqlmap {
         
         if($options != null){
             foreach ($options as $key => $value) {
-                $option .= $value." ";
+                $option .= $value["value"]." ";
             }
         }
-        // We used proc_open for a futur update with stdin
-        $cmd = "python ../modules/sqlmap/sqlmap.py --batch -u " . $url;//" ".$option;
+        
+        $cmd = "python ../modules/sqlmap/sqlmap.py --batch " . $option . " -u " . $url;
 
         $descriptorspec = array(
             0 => array("pipe", "r"), 
