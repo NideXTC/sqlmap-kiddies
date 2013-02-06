@@ -42,7 +42,7 @@
                         <input class="span2" id="url" type="text">
                         <span class="add-on">/</span>
                     </div>
-                    <input id="submitWebsite" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
+                    <input id="submitLink" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
                     <br />
                     <br />
                     <form id="formsqlmap" >
@@ -69,11 +69,10 @@
                 <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
             <hr>
-
-            <footer>
-                <p>&copy; SQLMap Kiddies - CSLI Developpement</p>
-            </footer>
-
+  
+          <?php $page = "index";
+          require_once("include/footer.php");
+          ?>
         </div> <!-- /container -->
 
 

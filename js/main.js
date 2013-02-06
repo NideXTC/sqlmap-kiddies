@@ -1,5 +1,6 @@
 
 $(document).ready(function(){
+    $('#url').focus();
     $("#submit").click(function(){  
 
        $.ajax({
@@ -14,7 +15,7 @@ $(document).ready(function(){
        }); 
    }); 
    
-   // Entier Website
+   // Full Website
    
    $("#submitWebsite").click(function(){  
       
@@ -54,6 +55,17 @@ $(document).ready(function(){
            }
            else   $("#result").html("bad result") ;   
        }); 
+   });
+
+   $("#submitLink").click(function(){  
+    $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes few minutes... </div>') ; 
+    $.ajax({
+        type: "POST",
+        url: "ajax/sqlmap.ajax.php",
+        data: {url : "http://" + $("#url").val()}
+    }).done(function( msg ) {
+        $("#result").html(msg) ; 
+    }); 
    }); 
    
    

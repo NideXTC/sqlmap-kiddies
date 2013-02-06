@@ -43,13 +43,11 @@
                 <legend>Result<span class='icon-arrow-right'></span></legend>
                 <div class="hero-unit result" id="result"></div>
             </div>
-
             <hr>
 
-            <footer>
-                <p>&copy; SQLMap Kiddies - CSLI Developpement</p>
-            </footer>
-
+            <?php $page = "index";
+            require_once("include/footer.php");
+            ?>
         </div> <!-- /container -->
 
 

@@ -2,6 +2,6 @@
 
 require_once '../class/Sqlmap.class.php';
 $sqlmap = new Sqlmap(); 
-$sqlmap->launch($_POST["url"]);
-
+$res = $sqlmap->launch($_POST["url"]);
+echo $res;
 ?>

@@ -60,7 +60,7 @@
                     <br />
                     <form id="formsqlmap" >
                       <label for="tor" class="checkbox span2">Activer TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
-                      <label for="data" class="checkbox span2">Activer POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
+                      <label for="data" class="checkbox span2">Activer POST<input type="checkbox" disabled="disabled" name="data" id="data" value="--data" /></label>
                       <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
                       <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
                       <br /><label for="dbms" class="span2">Select your database :</label>
@@ -81,13 +81,11 @@
                 <legend>Result<span class='icon-arrow-right'></span></legend>
                 <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
-
             <hr>
 
-            <footer>
-                <p>&copy; SQLMap Kiddies - CSLI Developpement</p>
-            </footer>
-
+            <?php $page = "index";
+            require_once("include/footer.php");
+            ?>
         </div> <!-- /container -->
 
 
