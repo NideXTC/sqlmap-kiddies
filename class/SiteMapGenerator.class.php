@@ -217,9 +217,9 @@ class SiteMapGenerator {
         else{
 			foreach($this->hash as $url=>$title) {
             	if(preg_match('/\?/', $url))
-                    $links .= '<span class="icon-ok"></span> <span class="green"><a href="lien.php?url='.$url.'">'.$url.'</a></span><div class="resultsql"></div>';
+                    $links .= '<span class="icon-ok"></span> <span class="green">'.$url.'</span><div class="resultsql"></div>';
            	    else
-                    $links .= '<span class="icon-remove"></span> <span class="red"><a href="lien.php?url='.substr($url, 7).'">'.$url.'</a></span><br />';
+                    $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
             }
 
             $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
@@ -227,21 +227,5 @@ class SiteMapGenerator {
             return $links;
         }
 	}
-
-	public function getSiteMapList(){
-		$list = array();
-		$txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
-
-		foreach ($this->hash as $url => $title) {
-			if(preg_match('/\?/', $url))
-				$list[$url] = 'valid';
-			else
-				$list[$url] = 'invalid';
-			# code...
-		}
-
-		return $list;
-	}
-
 }
 ?>
