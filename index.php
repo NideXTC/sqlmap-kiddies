@@ -41,7 +41,7 @@
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
                         <span class="add-on">http://</span>
-                        <input class="span4" id="url" type="text" required="required">
+                        <input class="span4" id="website_url" type="text" required="required">
                         <span class="add-on">/</span>
                     </div>
                     <input id="submitWebsite" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />

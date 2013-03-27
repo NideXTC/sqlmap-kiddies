@@ -36,7 +36,7 @@
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
                         <span class="add-on">http://</span>
-                        <input class="span4" id="url" type="text" value="<?php echo $url; ?>" required="required">
+                        <input class="span4" id="direct_url" type="text" value="<?php echo $url; ?>" required="required">
                         <span class="add-on">/</span>
                     </div>
                     <input id="submitLink" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />

@@ -1,12 +1,13 @@
 $(document).ready(function(){
 
-  $('#url').focus();
+  $('#direct_url').focus();
+  $('#website_url').focus();
 
   //===================
   // Full Website
-  $("#url").keyup(function(e){
+  $("#website_url").keyup(function(e){
     if(e.which == 13){
-      ajax_full_website();
+      ajax_full_website();  
     }
   });
 
@@ -15,13 +16,14 @@ $(document).ready(function(){
   });
 
   function ajax_full_website(){
-    if($("#url").val() != ""){
+    if($("#website_url").val() != ""){
       $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes a few minutes... </div>');
       $.ajax({
         type: "POST",
         url: "ajax/sitemap.ajax.php",
-        data: {url : $("#url").val()}
+        data: {url : $("#website_url").val()}
       }).done(function(msg){
+        alert(msg);
         if($.trim(msg) != "-1"){
           $("#result").html(msg);
 
@@ -35,7 +37,7 @@ $(document).ready(function(){
             $.ajax({
                 type: "POST",
                 url: "ajax/sqlmap.ajax.php",
-                data: {url : $("#url").val() , options : $("#formsqlmap").serializeArray()}
+                data: {url : "http://" + $("#website_url").val() , options : $("#formsqlmap").serializeArray()}
             }).done(function(msg){
               if(msg.search("[CRITICAL] no parameter(s) found for testing") == -1){
                 prev.html('Fail ');
@@ -59,8 +61,8 @@ $(document).ready(function(){
   };
 
   //===================
-  // Direct Link
-  $("#url").keypress(function(e){
+  // Direct Link 
+  $("#direct_url").keyup(function(e){
     if(e.which == 13){
       ajax_direct_link();  
     }
@@ -70,17 +72,21 @@ $(document).ready(function(){
     ajax_direct_link(); 
   });
 
-  function ajax_direct_link(){  
-    if($("#url").val() != ""){
+  function ajax_direct_link(){
+    if($("#direct_url").val() != ""){
       $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 350px;">Testing URL, it may takes a few minutes... </div>');
 
       $.ajax({
         type: "POST",
         url: "ajax/sqlmap.ajax.php",
-        data: {url : "http://" + $("#url").val(), options : $("#formsqlmap").serializeArray()}
+        data: {url : "http://" + $("#direct_url").val(), options : $("#formsqlmap").serializeArray()}
       }).done(function(msg){
-        $("#result").html(msg);
-      });      
+        if($.trim(msg) != "-1"){
+          $("#result").html(msg);
+        }else{
+          $("#result").html("Bad result :[");
+        }
+      });
     }else{
       $("#result").html("The field is empty modafacka.");
     }
