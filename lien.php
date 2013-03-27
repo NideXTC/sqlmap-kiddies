@@ -27,10 +27,7 @@
           <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
-
     <body>
-
-
         <?php
         $page = "lien";
         require_once("include/menu.php");
@@ -42,10 +39,11 @@
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
                         <span class="add-on">http://</span>
-                        <input class="span2" id="url" type="text" value="<?php echo $url; ?>">
+                        <input class="span4" id="url" type="text" value="<?php echo $url; ?>">
                         <span class="add-on">/</span>
                     </div>
                     <input id="submitLink" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
+                    <br />
                     <br />
                     <br />
                     <form id="formsqlmap" >
@@ -53,8 +51,8 @@
                       <label for="data" class="checkbox span2">Activer POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
                       <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
                       <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
-                      <br /><label for="dbms" class="span2">Select your database :</label>
-                      <select id="dbms" name="dbms" class="span2">
+                      <br /><label for="dbms" class="span3">Select your database :</label>
+                      <select id="dbms" name="dbms" class="span3">
                         <option value="" selected="selected">Choose your DBMS</option>
                         <option value="--dbms mysql" >MySQL</option>
                         <option value="--dbms oracle" >Oracle</option>
@@ -76,9 +74,6 @@
           <?php $page = "index";
           require_once("include/footer.php");
           ?>
-        </div> <!-- /container -->
-
-
+        </div>
     </body>
 </html>
-
