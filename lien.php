@@ -25,21 +25,24 @@
         <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
         <!--[if lt IE 9]>
           <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->   
+        <![endif]-->
     </head>
 
     <body>
 
 
-        <?php $page = "lien";
-        require_once("include/menu.php"); ?>
+        <?php
+        $page = "lien";
+        require_once("include/menu.php");
+        $url = isset($_GET['url']) ? $_GET['url'] : '';
+        ?>
         <div class="container">
             <div class="hero-unit">
                 <fieldset>
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
                         <span class="add-on">http://</span>
-                        <input class="span2" id="url" type="text">
+                        <input class="span2" id="url" type="text" value="<?php echo $url; ?>">
                         <span class="add-on">/</span>
                     </div>
                     <input id="submitLink" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
@@ -69,7 +72,7 @@
                 <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
             <hr>
-  
+
           <?php $page = "index";
           require_once("include/footer.php");
           ?>

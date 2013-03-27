@@ -5,23 +5,23 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
  * This class can help you to generate a sitemap to enhance the way Google
  * (and other search engines) indexes your page. According to this documentation:
  * https://www.google.com/webmasters/tools/docs/en/protocol.html
- * 
+ *
  * @author Felipe Ribeiro - http://feliperibeiro.com <felipernb@gmail.com>
- * @date Dec 25th, 2007 
- * 
+ * @date Dec 25th, 2007
+ *
  */
 class SiteMapGenerator {
 
@@ -31,30 +31,30 @@ class SiteMapGenerator {
 	 * @var string
 	 */
 	private $site;
-	
+
 	/**
 	 * The HTML content of the current page the system is navigating
 	 *
 	 * @var string
 	 */
 	private $html;
-	
+
 	/**
 	 * The url of the actual page the system is navigating
 	 *
 	 * @var string
 	 */
 	private $actual;
-	
+
 	/**
 	 * A hash table containing all the links
 	 *
 	 * @var array
 	 */
 	private $hash;
-	
-	
-	
+
+
+
 	/**
 	 * Constructs the SiteMapGenerator Object
 	 *
@@ -63,9 +63,9 @@ class SiteMapGenerator {
 	 */
 	public function __construct($site,$navigate=true) {
 		$this->site = $site;
-		$this->hash = array();              
+		$this->hash = array();
                 $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
-                
+
                  if(!file_exists("../sitemap/".$txtsite.".txt")){
                     if($navigate) {
                            $this->link($site);
@@ -74,7 +74,7 @@ class SiteMapGenerator {
 	}
 
 	/**
-	 * Gets the title of the current page, i.e. the text between <title> and </title> 
+	 * Gets the title of the current page, i.e. the text between <title> and </title>
 	 *
 	 * @return string title
 	 */
@@ -91,7 +91,7 @@ class SiteMapGenerator {
 	 * @return array containing the links
 	 */
 	public function getLinks() {
-		$preg = "/<a.*? href=(\"|')(.*?)(\"|').*?>(.*?)<\/a>/i";  
+		$preg = "/<a.*? href=(\"|')(.*?)(\"|').*?>(.*?)<\/a>/i";
 		$links = array();
 		preg_match_all($preg,$this->html,$links);
 		$urlsTemp = $links[2];
@@ -149,7 +149,7 @@ class SiteMapGenerator {
 
 		return $urls;
 	}
-	
+
 	/**
 	 * Redirect the object to a new page
 	 *
@@ -164,35 +164,35 @@ class SiteMapGenerator {
 			$this->navigate();
 		}
 	}
-	
+
 	/**
 	 * Navigates through the page collecting the data
 	 *
 	 */
 	public function navigate() {
-            
+
 		$this->html = file_get_contents($this->actual);
-		
+
 		if ($this->html) { // make sure we have something to parse
 			// remove html comments in order to avoid hidden urls
 			$this->html = preg_replace('/<!--.*?-->/s','',$this->html);
 			$title = $this->getTitle();
 			$this->hash[$this->actual] = $title;
-		
+
 			if($title==null || $title=="") {
 				$this->hash[$this->actual] = "Untitled";
 			}
-			
+
 			$links = $this->getLinks();
 			foreach($links as $link) {
-				$this->link($link);			
+				$this->link($link);
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns the Hashtable with the links and titles of each page. e.g
-	 * 
+	 *
 	 * <code>
 	 * Array (
 	 * "http://blog.feliperibeiro.com" => "Felipe Ribeiro Home"
@@ -203,35 +203,35 @@ class SiteMapGenerator {
 	public function getHash() {
 		return $this->hash;
 	}
-	
-	
+
+
 	public function generateSiteMap() {
 
 		$links="" ;
                 $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
-                
-                 if(file_exists("../sitemap/".$txtsite.".txt")){                    
-                    $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");                 
+
+                 if(file_exists("../sitemap/".$txtsite.".txt")){
+                    $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");
                     return $txtsitemap;
                 }
                 else{
-		
+
 		foreach($this->hash as $url=>$title) {
-                    
+
                     if(preg_match('/\?/', $url))
-                        $links .= '<span class="icon-ok"></span> <span class="green">'.$url.'</span><div class="resultsql"></div>';
+                        $links .= '<span class="icon-ok"></span> <span class="green"><a href="lien.php?url='.$url.'">'.$url.'</a></span><div class="resultsql"></div>';
                     else
-                        $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
-                
+                        $links .= '<span class="icon-remove"></span> <span class="red"><a href="lien.php?url='.substr($url, 7).'">'.$url.'</a></span><br />';
+
                     }
                     $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
                     file_put_contents("../sitemap/".$txtsite.".txt",$links );
                     return $links;
-                
+
                 }
-                
-                
+
+
 	}
-	
+
 }
 ?>
