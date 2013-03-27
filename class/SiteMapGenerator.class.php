@@ -229,7 +229,18 @@ class SiteMapGenerator {
 	}
 
 	public function getSiteMapList(){
+		$list = array();
+		$txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
 
+		foreach ($this->hash as $url => $title) {
+			if(preg_match('/\?/', $url))
+				$list[$url] = 'valid';
+			else
+				$list[$url] = 'invalid';
+			# code...
+		}
+
+		return $list;
 	}
 
 }
