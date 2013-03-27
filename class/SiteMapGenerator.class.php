@@ -208,28 +208,27 @@ class SiteMapGenerator {
 	public function generateSiteMap() {
 
 		$links="" ;
-                $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+        $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
 
-                 if(file_exists("../sitemap/".$txtsite.".txt")){
-                    $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");
-                    return $txtsitemap;
-                }
-                else{
+        if(file_exists("../sitemap/".$txtsite.".txt")){
+            $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");
+            return $txtsitemap;
+        }
+        else{
+			foreach($this->hash as $url=>$title) {
+            	if(preg_match('/\?/', $url))
+                    $links .= '<span class="icon-ok"></span> <span class="green"><a href="lien.php?url='.$url.'">'.$url.'</a></span><div class="resultsql"></div>';
+           	    else
+                    $links .= '<span class="icon-remove"></span> <span class="red"><a href="lien.php?url='.substr($url, 7).'">'.$url.'</a></span><br />';
+            }
 
-		foreach($this->hash as $url=>$title) {
+            $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+            file_put_contents("../sitemap/".$txtsite.".txt",$links );
+            return $links;
+        }
+	}
 
-                    if(preg_match('/\?/', $url))
-                        $links .= '<span class="icon-ok"></span> <span class="green"><a href="lien.php?url='.$url.'">'.$url.'</a></span><div class="resultsql"></div>';
-                    else
-                        $links .= '<span class="icon-remove"></span> <span class="red"><a href="lien.php?url='.substr($url, 7).'">'.$url.'</a></span><br />';
-
-                    }
-                    $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
-                    file_put_contents("../sitemap/".$txtsite.".txt",$links );
-                    return $links;
-
-                }
-
+	public function getSiteMapList(){
 
 	}
 
