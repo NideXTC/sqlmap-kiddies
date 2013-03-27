@@ -4,20 +4,19 @@ $(document).ready(function(){
 
   //===================
   // Full Website
-  $("#url").keypress(function(e){
+  $("#url").keyup(function(e){
     if(e.which == 13){
-      ajax_full_website();  
+      ajax_full_website();
     }
   });
 
   $("#submitWebsite").click(function(){
-    ajax_full_website(); 
+    ajax_full_website();
   });
 
   function ajax_full_website(){
     if($("#url").val() != ""){
       $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 250px;">Generation of links in progress, it may takes a few minutes... </div>');
-      
       $.ajax({
         type: "POST",
         url: "ajax/sitemap.ajax.php",
