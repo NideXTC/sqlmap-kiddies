@@ -23,7 +23,6 @@ $(document).ready(function(){
         url: "ajax/sitemap.ajax.php",
         data: {url : $("#website_url").val()}
       }).done(function(msg){
-        //alert(msg);
         if($.trim(msg) != "-1"){
           $("#result").html(msg);
 
@@ -39,13 +38,10 @@ $(document).ready(function(){
             $.ajax({
                 type: "POST",
                 url: "ajax/sqlmap.ajax.php",
+                dataType: "json",
                 data: {url : $(this).html() , options : $("#formsqlmap").serializeArray()},
-                success: function(donnees){
-                  //console.log(data);
-                  console.log(donnees["returnCode"]);
-                  console.log(donnees.returnCode);
-                  //alert(data);
-                  if(data["returnCode"] < 0){
+                success: function(donnees){                  
+                  if(donnees.returnCode < 0){
                     prev.html('Fail ');
                     prev.addClass('label label-important');
                   }

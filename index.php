@@ -44,7 +44,8 @@
                         <input class="span4" id="website_url" type="text" required="required">
                         <span class="add-on">/</span>
                     </div>
-                    <input id="submitWebsite" style="float: left;" class="btn btn-primary"type="button" name="submit" value="Submit" />
+                    <input id="submitWebsite" class="btn btn-primary span2"type="button" name="submit" value="Submit" />
+
                     <br />
                     <br />
                     <br />
@@ -65,10 +66,15 @@
                         </select>
                       </div>
                       <div class="row">
-                        <label for="tor" class="checkbox span2">Activer TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
-                        <label for="data" class="checkbox span2">Activer POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
-                        <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
-                        <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
+                        <label for="dbms" class="span2">Options :</label>
+                        <div class="span9 offset1">
+                          <label for="tor" class="checkbox span2">Activate TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
+                          <label for="data" class="checkbox span2">Activate POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
+                        </div>
+                        <div class="span9 offset1">
+                          <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
+                          <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
+                        </div>
                       </div>
                     </form>
                 </fieldset>
