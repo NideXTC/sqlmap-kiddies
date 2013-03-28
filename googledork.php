@@ -10,30 +10,20 @@
         <script src="js/jquery.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <script src="js/main.js"></script>
-
-        <!-- Le styles -->
         <link href="css/bootstrap.css" rel="stylesheet">
         <link href="css/main.css" rel="stylesheet">
-
-        <style type="text/css">
-            body {
-                padding-top: 60px;
-                padding-bottom: 40px;
-            }
-        </style>
         <link href="css/bootstrap-responsive.css" rel="stylesheet">
         <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
         <!--[if lt IE 9]>
           <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->   
+        <![endif]-->
     </head>
 
     <body>
-
-
         <?php $page = "googledork";
         require_once("include/menu.php"); ?>
         <div class="container">
+            <div class="row"><div class="span12"><div id="alert-cache" class="alert alert-error fade in"><a class="close" data-dismiss="alert">×</a>Thiz page doez not work biatch.</div></div></div>
             <div class="hero-unit">
                 <fieldset>
                     <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
@@ -44,13 +34,10 @@
                 <div class="hero-unit result" id="result"></div>
             </div>
             <hr>
-
             <?php $page = "index";
             require_once("include/footer.php");
             ?>
-        </div> <!-- /container -->
-
-
+        </div>
     </body>
 </html>
 

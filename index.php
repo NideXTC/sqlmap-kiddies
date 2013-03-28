@@ -13,7 +13,7 @@
             function precharger_images(url){
                 var img = new Image();
                 img.src=url;
-            }            
+            }
             $(window).load(function(){
                 precharger_images("img/ajax-loader.gif");
             });
@@ -21,23 +21,16 @@
         <script src="js/main.js"></script>
         <link href="css/bootstrap.css" rel="stylesheet">
         <link href="css/main.css" rel="stylesheet">
-        <style type="text/css">
-          body {
-            padding-top: 60px;
-            padding-bottom: 40px;
-          }
-        </style>
         <link href="css/bootstrap-responsive.css" rel="stylesheet">
         <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
         <!--[if lt IE 9]>
           <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->   
+        <![endif]-->
     </head>
     <body>
         <?php $page = "index"; require_once("include/menu.php"); ?>
         <div class="container">
-            <div id="display-alert"></div>
-            <div class="hero-unit">            
+            <div class="hero-unit">
                 <fieldset>
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
@@ -45,8 +38,7 @@
                         <input class="span4" id="website_url" type="text" required="required">
                         <span class="add-on">/</span>
                     </div>
-                    <input id="submitWebsite" class="btn btn-primary"type="button" name="submit" value="Submit" />
-                    <input id="delCache" class="btn btn-danger" type="button" name="submit" value="Delete Cache" />
+                    <button id="submitWebsite" class="btn btn-primary" type="button"/><i class="icon-chevron-right icon-white"></i> Submit</button>
                     <br />
                     <br />
                     <br />
@@ -67,7 +59,7 @@
                         </select>
                       </div>
                       <div class="row">
-                        <label for="dbms" class="span2">Options :</label>
+                        <label class="span2">Options :</label>
                         <div class="span9 offset1">
                           <label for="tor" class="checkbox span2">Activate TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
                           <label for="data" class="checkbox span2">Activate POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
@@ -82,11 +74,9 @@
                 <legend>Result<span class='icon-arrow-right'></span></legend>
                 <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
-            <hr>
+            <hr />
 
-            <?php $page = "index";
-            require_once("include/footer.php");
-            ?>
+            <?php require_once("include/footer.php"); ?>
         </div>
     </body>
 </html>

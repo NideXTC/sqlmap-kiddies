@@ -9,9 +9,12 @@
       <a class="brand" href="index.php">SQLMap Kiddies</a>
       <div class="nav-collapse collapse">
         <ul class="nav">
+          <li class="divider-vertical"></li>
           <li class="<?php if($page == "index") echo "active" ?>"><a href="index.php">Full website</a></li>
           <li class="<?php if($page == "lien") echo "active" ?>"><a href="lien.php">Direct link</a></li>
           <li class="<?php if($page == "googledork") echo "active" ?>"><a href="googledork.php">Google Dork</a></li>
+          <li class="divider-vertical"></li>
+          <li class="<?php if($page == "cache") echo "active" ?>"><a href="cache.php">Cache settings</a></li>
         </ul>
       </div>
     </div>

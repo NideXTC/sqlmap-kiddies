@@ -1,67 +1,70 @@
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+
 .hero-unit.result{
   background-color: #BEBEBE;
   padding: 15px;
 }
 
-
 #floatingBarsG{
-    margin: auto;
-position:relative;
-width:62px;
-height:77px; 
-
+  margin: auto;
+  position:relative;
+  width:62px;
+  height:77px;
 }
 
 .blockG{
-position:absolute;
-background-color:#FFFFFF;
-width:10px;
-height:24px;
--moz-border-radius:8px 8px 0 0;
--moz-transform:scale(0.4);
--moz-animation-name:fadeG;
--moz-animation-duration:0.48s;
--moz-animation-iteration-count:infinite;
--moz-animation-direction:linear;
--webkit-border-radius:8px 8px 0 0;
--webkit-transform:scale(0.4);
--webkit-animation-name:fadeG;
--webkit-animation-duration:0.48s;
--webkit-animation-iteration-count:infinite;
--webkit-animation-direction:linear;
--ms-border-radius:8px 8px 0 0;
--ms-transform:scale(0.4);
--ms-animation-name:fadeG;
--ms-animation-duration:0.48s;
--ms-animation-iteration-count:infinite;
--ms-animation-direction:linear;
--o-border-radius:8px 8px 0 0;
--o-transform:scale(0.4);
--o-animation-name:fadeG;
--o-animation-duration:0.48s;
--o-animation-iteration-count:infinite;
--o-animation-direction:linear;
-border-radius:8px 8px 0 0;
-transform:scale(0.4);
-animation-name:fadeG;
-animation-duration:0.48s;
-animation-iteration-count:infinite;
-animation-direction:linear;
+  position:absolute;
+  background-color:#FFFFFF;
+  width:10px;
+  height:24px;
+  -moz-border-radius:8px 8px 0 0;
+  -moz-transform:scale(0.4);
+  -moz-animation-name:fadeG;
+  -moz-animation-duration:0.48s;
+  -moz-animation-iteration-count:infinite;
+  -moz-animation-direction:linear;
+  -webkit-border-radius:8px 8px 0 0;
+  -webkit-transform:scale(0.4);
+  -webkit-animation-name:fadeG;
+  -webkit-animation-duration:0.48s;
+  -webkit-animation-iteration-count:infinite;
+  -webkit-animation-direction:linear;
+  -ms-border-radius:8px 8px 0 0;
+  -ms-transform:scale(0.4);
+  -ms-animation-name:fadeG;
+  -ms-animation-duration:0.48s;
+  -ms-animation-iteration-count:infinite;
+  -ms-animation-direction:linear;
+  -o-border-radius:8px 8px 0 0;
+  -o-transform:scale(0.4);
+  -o-animation-name:fadeG;
+  -o-animation-duration:0.48s;
+  -o-animation-iteration-count:infinite;
+  -o-animation-direction:linear;
+  border-radius:8px 8px 0 0;
+  transform:scale(0.4);
+  animation-name:fadeG;
+  animation-duration:0.48s;
+  animation-iteration-count:infinite;
+  animation-direction:linear;
 }
 
 #rotateG_01{
-left:0;
-top:28px;
--moz-animation-delay:0.18s;
--moz-transform:rotate(-90deg);
--webkit-animation-delay:0.18s;
--webkit-transform:rotate(-90deg);
--ms-animation-delay:0.18s;
--ms-transform:rotate(-90deg);
--o-animation-delay:0.18s;
--o-transform:rotate(-90deg);
-animation-delay:0.18s;
-transform:rotate(-90deg);
+  left:0;
+  top:28px;
+  -moz-animation-delay:0.18s;
+  -moz-transform:rotate(-90deg);
+  -webkit-animation-delay:0.18s;
+  -webkit-transform:rotate(-90deg);
+  -ms-animation-delay:0.18s;
+  -ms-transform:rotate(-90deg);
+  -o-animation-delay:0.18s;
+  -o-transform:rotate(-90deg);
+  animation-delay:0.18s;
+  transform:rotate(-90deg);
 }
 
 #rotateG_02{
@@ -212,20 +215,20 @@ background-color:#000000}
 100%{
 background-color:#FFFFFF}
 
-} 
+}
 
 .green{
-    color : green ; 
+  color: green;
 }
 
 .red{
-    color : red ; 
+  color: red;
 }
 
 
 .resultsql{
-    font-size: 12px; 
-    max-height: 200px; 
-    overflow: auto  ;
-    background-color: #EEEEEE ;
+  font-size: 12px;
+  max-height: 200px;
+  overflow: auto;
+  background-color: #EEEEEE;
 }
