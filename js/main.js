@@ -89,7 +89,7 @@ function ajax_full_website(){
                   prev.html('Success');
                   prev.addClass('label label-success');
                 }
-                divResult.html(data["message"]);
+                divResult.html(donnees.message);
               }
           });
         });
