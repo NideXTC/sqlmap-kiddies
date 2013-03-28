@@ -36,7 +36,8 @@
     <body>
         <?php $page = "index"; require_once("include/menu.php"); ?>
         <div class="container">
-            <div class="hero-unit">
+            <div id="display-alert"></div>
+            <div class="hero-unit">            
                 <fieldset>
                     <legend><p>Enter your URL<span class='icon-arrow-right'></span></p></legend>
                     <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
@@ -45,7 +46,7 @@
                         <span class="add-on">/</span>
                     </div>
                     <input id="submitWebsite" class="btn btn-primary span2"type="button" name="submit" value="Submit" />
-
+                    <input id="delCache" class="btn btn-danger span2"type="button" name="submit" value="Delete Cache" />
                     <br />
                     <br />
                     <br />

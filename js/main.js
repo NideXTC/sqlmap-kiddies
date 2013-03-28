@@ -4,6 +4,12 @@ $(document).ready(function(){
   $('#website_url').focus();
 
   //===================
+  // Delete cache
+  $("#delCache").click(function(){  
+    delete_cache();
+  });  
+
+  //===================
   // Full Website
   $("#website_url").keyup(function(e){
     if(e.which == 13){
@@ -109,4 +115,19 @@ function ajax_direct_link(){
   }else{
     $("#result").html("The field is empty modafacka.");
   }
+}
+
+function delete_cache(){
+  $.ajax({
+    type: "POST",
+    url: "ajax/deleteCache.ajax.php" 
+  }).done(function(msg){
+    if($.trim(msg) == "0"){   
+      var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-success fade in"><a class="close" data-dismiss="alert">×</a>Cache has been correctly deleted</div></div></div>';
+      $("#display-alert").html(alert);
+    }else{
+      var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-error fade in"><a class="close" data-dismiss="alert">×</a>An error occured :[</div></div></div>';
+      $("#display-alert").html(alert);
+    }
+  }); 
 }
