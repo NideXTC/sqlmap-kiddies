@@ -110,12 +110,15 @@ function ajax_direct_link(){
     $.ajax({
       type: "POST",
       url: "ajax/sqlmap.ajax.php",
-      data: {url : "http://" + $("#direct_url").val(), options : $("#formsqlmap").serializeArray()}
-    }).done(function(msg){
-      if($.trim(msg) != "-1"){
-        $("#result").html(msg);
-      }else{
-        $("#result").html("Bad result :[");
+      dataType: "json",
+      data: {url : "http://" + $("#direct_url").val(), options : $("#formsqlmap").serializeArray()},
+      success: function(donnees){
+        if(donnees.returnCode < 0){
+          $("#result").html("Bad result :[");
+        }
+        else{
+          $("#result").html(donnees.message);
+        }
       }
     });
   }else{
