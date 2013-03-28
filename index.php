@@ -45,8 +45,8 @@
                         <input class="span4" id="website_url" type="text" required="required">
                         <span class="add-on">/</span>
                     </div>
-                    <input id="submitWebsite" class="btn btn-primary span2"type="button" name="submit" value="Submit" />
-                    <input id="delCache" class="btn btn-danger span2"type="button" name="submit" value="Delete Cache" />
+                    <input id="submitWebsite" class="btn btn-primary"type="button" name="submit" value="Submit" />
+                    <input id="delCache" class="btn btn-danger" type="button" name="submit" value="Delete Cache" />
                     <br />
                     <br />
                     <br />
