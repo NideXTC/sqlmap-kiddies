@@ -6,7 +6,7 @@ A simple application which allow you to simply use SQLMap on a website, a unique
 ##Options Not Implemented (yet)
 
 |                     Form option | Action                                    |
-|:---------------------------------------------------------------------------:|
+|:-------------------------------:|:-----------------------------------------:|
 |  --data=DATA         |Data string to be sent through POST                   |
 |  --dbms=DBMS         |Force back-end DBMS to this value                     |
 |  --level=LEVEL       |Level of tests to perform (1-5, default 1)            |
