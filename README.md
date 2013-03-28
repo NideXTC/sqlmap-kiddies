@@ -1,9 +1,9 @@
-SQLMap-Kiddies
-==============
+#SQLMap-Kiddies
+
 
 A simple application which allow you to simply use SQLMap on a website, a unique page or a google dork.
 
-=============
+##Options Not Implemented (yet)
 
 |                Add severals options to the form                            |
 |:--------------------------------------------------------------------------:|
@@ -25,7 +25,8 @@ A simple application which allow you to simply use SQLMap on a website, a unique
 |  --dump-all          Dump all DBMS databases tables entries                |
 |  --search            Search column(s), table(s) and/or database name(s)    |
 
-Cache your sitemaps
+
+##Cache your sitemaps !
 
 When using the full website function, SQLMap-Kiddies build a full sitemap of the target and save it in cache.
 You can easily choose wich sitemap you want to keep or delete.
