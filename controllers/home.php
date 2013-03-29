@@ -1,13 +1,12 @@
 <?php
 
+$currentPage = 'singlelink';
 $act = getAction();
-
-//die($act);
+$link = parseString(getParameter('link'));
 
 if($act == 'submit'){
 	$optionList = array();
 
-	$link = parseString(getParameter('link'));
 	$optionList[] = '--dump-format='.parseString(getParameter('output-format'));
 	$optionList[] = (parseString(getParameter('tor')) == 'on') ? '--tor' : '';
 	$optionList[] = (parseString(getParameter('keep-alive')) == 'on') ? '--keep-alive' : '';

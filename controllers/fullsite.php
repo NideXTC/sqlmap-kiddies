@@ -1,15 +1,24 @@
 <?php
 
+$currentPage = 'fullsite';
 $act = getAction();
 
 if($act == 'submit'){
 	$link = parseString(getParameter('link'));
 
-	include('./models/SiteMapGenerator.php');
+	$return = array(
+		'returnCode' => -1,
+		'siteMap' => array()
+	);
 
-	$siteMap = new SiteMapGenerator($link);
+	if(filter_var($link, FILTER_VALIDATE_URL)){
+		include('./models/SiteMapGenerator.php');
 
-	$return = $siteMap->getLinkList();
+		$siteMap = new SiteMapGenerator($link);
+
+		$return['returnCode'] = 0;
+		$return['siteMap'] = $siteMap->getLinkList();
+	}
 
 	echo json_encode($return);
 }

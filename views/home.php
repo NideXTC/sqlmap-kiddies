@@ -4,7 +4,7 @@
 			<div class="row">
 				<h4>Enter a link</h4>
 
-				<input id="link" name="link" value="" type="text" />
+				<input id="link" name="link" value="<?php echo $link; ?>" type="text" />
 				<button class="btn btn-primary">sqlmap me !</button>
 				<div id="ajax-loader" style="display: none;"></div>
 			</div>

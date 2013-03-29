@@ -37,10 +37,10 @@
 				<a class="brand" href="#">SQLMap4Kiddiez</a>
 				<div class="nav-collapse collapse">
 					<ul class="nav">
-						<li class="active"><a href="<?php echo createUrl('home'); ?>">Single link</a></li>
-						<li><a href="<?php echo createUrl('fullsite'); ?>">Full website</a></li>
-						<li><a href="#contact">Google dorks</a></li>
-						<li><a href="#contact">Fuzzer</a></li>
+						<li <?php if($currentPage == 'singlelink') echo 'class="active"'; ?>><a href="<?php echo createUrl('home'); ?>">Single link</a></li>
+						<li <?php if($currentPage == 'fullsite') echo 'class="active"'; ?>><a href="<?php echo createUrl('fullsite'); ?>">Full website</a></li>
+						<li <?php if($currentPage == 'googledorks') echo 'class="active"'; ?>><a href="#contact">Google dorks</a></li>
+						<li <?php if($currentPage == 'fuzzer') echo 'class="active"'; ?>><a href="#contact">Fuzzer</a></li>
 					</ul>
 				</div><!--/.nav-collapse -->
 			</div>
