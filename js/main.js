@@ -32,6 +32,7 @@ $(document).ready(function(){
   $("#submitLink").click(function(){
     ajax_direct_link();
   });
+});
 
 //===================
 // Functions and stuff
@@ -43,7 +44,7 @@ function ajax_full_website(){
       url: "ajax/sitemap.ajax.php",
       data: {url : $("#website_url").val()}
     }).done(function(msg){
-      if($.trim(msg) != "-1"){
+      if($.trim(msg) != "-1" && $.trim(msg) != "0"){
         $("#result").html(msg);
 
         //SQLMap on each link with GET params
@@ -71,7 +72,7 @@ function ajax_full_website(){
         });
 
       }else{
-        $("#result").html("Bad result :[");
+        $("#result").html("Erf ... something went wrong master.");
       }
     });
   }else{

@@ -1,11 +1,12 @@
 <?php
 
+// To create or connect to the database (history.sqlite3) uncomment line 9
 // To drop database, simply delete history.sqlite3 file.
-// Uncomment line 15 and 16 to create tables but don't forget to comment them after
+// Uncomment line 16 and 17 to create tables but don't forget to comment them after
 // You can fill the database with the little script under *TABLE INSERTION*
 
 // Create (connect to) SQLite database in file
-$file_db = new PDO('sqlite:history.sqlite3');
+// $file_db = new PDO('sqlite:db/history.sqlite3');
 
 
 //==================
@@ -13,7 +14,7 @@ $file_db = new PDO('sqlite:history.sqlite3');
 // DO IT ONE TIME
 //==================
 // $file_db->exec('CREATE TABLE IF NOT EXISTS websites (id INTEGER PRIMARY KEY, name TEXT, time TEXT)');
-// $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT)');
+// $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER)');
 //==================
 // END TABLES CREATION
 //==================

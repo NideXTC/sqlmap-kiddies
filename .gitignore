@@ -1,4 +1,4 @@
 /nbproject/private/
 txt/*.txt
 sitemap/*.txt
-history.sqlite3
+db/history.sqlite3
