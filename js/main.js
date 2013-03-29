@@ -33,28 +33,6 @@ $(document).ready(function(){
     ajax_direct_link();
   });
 
-  //===================
-  // Google Dork
-  $("#submit").click(function(){
-    $.ajax({
-      type: "POST",
-      url: "ajax/sqlmap.ajax.php",
-      data: {url : $("#url").val()}
-    }).done(function( msg ) {
-      if($.trim(msg) != "-1"){
-        $("#result").html(msg) ;
-      }else   $("#result").html("bad result") ;
-    });
-  });
-
-  $("#select-all").change(function(){
-    $(".sitemap-checkbox").each(function(){
-      $(this).prop('checked', $('#select-all').is(':checked'));
-    });
-  });
-});
-
-
 //===================
 // Functions and stuff
 function ajax_full_website(){
@@ -68,13 +46,12 @@ function ajax_full_website(){
       if($.trim(msg) != "-1"){
         $("#result").html(msg);
 
-        // Syntax highlighting
+        //SQLMap on each link with GET params
         $(".green").each(function(){
           $(this).prev('span').removeClass("icon-ok");
           $(this).prev('span').html('<img src="img/ajax-loader.gif" alt="Loader" />');
           var prev = $(this).prev('span');
           var divResult = $(this).next(".resultsql");
-
           $.ajax({
               type: "POST",
               url: "ajax/sqlmap.ajax.php",
@@ -84,8 +61,7 @@ function ajax_full_website(){
                 if(donnees.returnCode < 0){
                   prev.html('Fail ');
                   prev.addClass('label label-important');
-                }
-                else{
+                }else{
                   prev.html('Success');
                   prev.addClass('label label-success');
                 }
