@@ -39,4 +39,4 @@ Thumbs.db
 
 # sqlmap
 data/*
-python/sqlmap/output/*
+libraries/python/sqlmap/output/*
