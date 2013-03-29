@@ -1,4 +1,5 @@
 <?php
+
 $sitemaps = $_POST['sitemaps'];
 
 $res = 0;
@@ -14,12 +15,6 @@ while (false !== ($file = readdir($folder))){ // Reading each file of the folder
        unlink($path);
     }
   }
-}
-
-$count = 0;
-while (false !== ($file = readdir($folder))){
-  if ($file != ".gitkeep")
-    $res = -1;
 }
 
 closedir($folder);

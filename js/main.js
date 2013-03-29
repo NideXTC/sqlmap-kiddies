@@ -134,24 +134,29 @@ function delete_cache(){
       checkboxes[i] = $(this).val();
     }
   });
-
-  $.ajax({
-    type: "POST",
-    url: "ajax/deleteCache.ajax.php",
-    data: {sitemaps: checkboxes}
-  }).done(function(msg){
-    if($.trim(msg) == "0"){
-      var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-success fade in"><a class="close" data-dismiss="alert">×</a>Cache has been correctly deleted</div></div></div>';
-      $("#display-alert").html(alert);
-    }else{
-      var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-error fade in"><a class="close" data-dismiss="alert">×</a>An error occured :[</div></div></div>';
-      $("#display-alert").html(alert);
-    }
-    $(".sitemap-checkbox").each(function(i){
-      if($(this).is(":checked")){
-        // Remove checkbox and label (parent) after deleting cache
-        $(this).parent().remove();
+  //If there is no sitemap checked
+  if(checkboxes.length == 0){
+    var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-block fade in"><a class="close" data-dismiss="alert">×</a>Nothing to delete !</div></div></div>';
+    $("#display-alert").html(alert);
+  }else{
+    $.ajax({
+      type: "POST",
+      url: "ajax/deleteCache.ajax.php",
+      data: {sitemaps: checkboxes}
+    }).done(function(msg){
+      if($.trim(msg) == "0"){
+        var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-success fade in"><a class="close" data-dismiss="alert">×</a>Cache has been correctly deleted</div></div></div>';
+        $("#display-alert").html(alert);
+      }else{
+        var alert = '<div class="row"><div class="span12"><div id="alert-cache" class="alert alert-error fade in"><a class="close" data-dismiss="alert">×</a>An error occured :[</div></div></div>';
+        $("#display-alert").html(alert);
       }
+      $(".sitemap-checkbox").each(function(i){
+        if($(this).is(":checked")){
+          // Remove checkbox and label (parent) after deleting cache
+          $(this).parent().remove();
+        }
+      });
     });
-  });
+  }
 }
