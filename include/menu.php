@@ -15,6 +15,7 @@
           <li class="<?php if($page == "googledork") echo "active" ?>"><a href="googledork.php">Google Dork</a></li>
           <li class="divider-vertical"></li>
           <li class="<?php if($page == "cache") echo "active" ?>"><a href="cache.php">Cache settings</a></li>
+          <li class="<?php if($page == "history") echo "active" ?>"><a href="history.php">History</a></li>
         </ul>
       </div>
     </div>

@@ -14,7 +14,7 @@
 // DO IT ONE TIME
 //==================
 // $file_db->exec('CREATE TABLE IF NOT EXISTS websites (id INTEGER PRIMARY KEY, name TEXT, time TEXT)');
-// $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER)');
+// $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER, success BOOLEAN)');
 //==================
 // END TABLES CREATION
 //==================

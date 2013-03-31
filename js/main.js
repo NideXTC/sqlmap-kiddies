@@ -32,6 +32,12 @@ $(document).ready(function(){
   $("#submitLink").click(function(){
     ajax_direct_link();
   });
+
+  $("#select-all").change(function(){
+    $(".sitemap-checkbox").each(function(){
+      $(this).prop('checked', $('#select-all').is(':checked'));
+    });
+  });
 });
 
 //===================

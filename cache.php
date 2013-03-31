@@ -56,6 +56,7 @@
           </div>
         </div>
       </div>
+      <hr />
       <?php require_once("include/footer.php"); ?>
     </div>
   </body>
