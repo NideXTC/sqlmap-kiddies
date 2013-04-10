@@ -10,6 +10,7 @@
         <script src="js/jquery.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <script src="js/main.js"></script>
+        <script src="js/history.js"></script>
         <link href="css/bootstrap.css" rel="stylesheet">
         <link href="css/main.css" rel="stylesheet">
         <link href="css/bootstrap-responsive.css" rel="stylesheet">
