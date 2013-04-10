@@ -62,7 +62,7 @@ function ajax_full_website(){
           var divResult = $(this).next(".resultsql");
           $.ajax({
               type: "POST",
-              url: "ajax/webSiteSqlmap.ajax.php",
+              url: "ajax/WebSiteSqlmap.ajax.php",
               dataType: "json",
               data: {url : $(this).html(), options : $("#formsqlmap").serializeArray(), web_site_id : webSiteId},
               success: function(donnees){
