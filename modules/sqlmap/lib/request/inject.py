@@ -16,6 +16,7 @@ from lib.core.common import cleanQuery
 from lib.core.common import expandAsteriskForColumns
 from lib.core.common import extractExpectedValue
 from lib.core.common import getPublicTypeMembers
+from lib.core.common import getTechniqueData
 from lib.core.common import hashDBRetrieve
 from lib.core.common import hashDBWrite
 from lib.core.common import initTechnique
@@ -25,6 +26,7 @@ from lib.core.common import isTechniqueAvailable
 from lib.core.common import parseUnionPage
 from lib.core.common import popValue
 from lib.core.common import pushValue
+from lib.core.common import randomStr
 from lib.core.common import readInput
 from lib.core.common import singleTimeWarnMessage
 from lib.core.data import conf
@@ -76,7 +78,14 @@ def _goInference(payload, expression, charsetType=None, firstChar=None, lastChar
 
     if not (timeBasedCompare and kb.dnsTest):
         if (conf.eta or conf.threads > 1) and Backend.getIdentifiedDbms() and not re.search("(COUNT|LTRIM)\(", expression, re.I) and not timeBasedCompare:
-            if field and conf.hexConvert:
+
+            if field and re.search("\ASELECT\s+DISTINCT\((.+?)\)\s+FROM", expression, re.I):
+                expression = "SELECT %s FROM (%s)" % (field, expression)
+
+                if Backend.getIdentifiedDbms() in (DBMS.MYSQL, DBMS.PGSQL):
+                    expression += " AS %s" % randomStr(lowercase=True)
+
+            if field and conf.hexConvert or conf.binaryFields and field in conf.binaryFields.split(','):
                 nulledCastedField = agent.nullAndCastField(field)
                 injExpression = expression.replace(field, nulledCastedField, 1)
             else:
@@ -402,13 +411,21 @@ def getValue(expression, blind=True, union=True, error=True, time=True, fromUser
 
     if not kb.testMode and value is None and Backend.getDbms() and conf.dbmsHandler:
         warnMsg = "in case of continuous data retrieval problems you are advised to try "
-        warnMsg += "a switch '--no-cast' and/or switch '--hex'"
+        warnMsg += "a switch '--no-cast' or switch '--hex'"
         singleTimeWarnMessage(warnMsg)
 
     return extractExpectedValue(value, expected)
 
 def goStacked(expression, silent=False):
-    kb.technique = PAYLOAD.TECHNIQUE.STACKED
+    if PAYLOAD.TECHNIQUE.STACKED in kb.injection.data:
+        kb.technique = PAYLOAD.TECHNIQUE.STACKED
+    else:
+        for technique in getPublicTypeMembers(PAYLOAD.TECHNIQUE, True):
+            _ = getTechniqueData(technique)
+            if _ and "stacked" in _["title"].lower():
+                kb.technique = technique
+                break
+
     expression = cleanQuery(expression)
 
     if conf.direct:

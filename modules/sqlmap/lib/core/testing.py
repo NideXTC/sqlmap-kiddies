@@ -29,6 +29,8 @@ from lib.core.exception import SqlmapBaseException
 from lib.core.exception import SqlmapNotVulnerableException
 from lib.core.log import LOGGER_HANDLER
 from lib.core.option import init
+from lib.core.option import initOptions
+from lib.core.option import setVerbosity
 from lib.core.optiondict import optDict
 from lib.core.settings import UNICODE_ENCODING
 from lib.parse.cmdline import cmdLineParser
@@ -39,8 +41,9 @@ failedTraceBack = None
 
 def smokeTest():
     """
-    This will run the basic smoke testing of a program
+    Runs the basic smoke testing of a program
     """
+
     retVal = True
     count, length = 0, 0
 
@@ -104,8 +107,9 @@ def adjustValueType(tagName, value):
 
 def liveTest():
     """
-    This will run the test of a program against the live testing environment
+    Runs the test of a program against the live testing environment
     """
+
     global failedItem
     global failedParseOn
     global failedTraceBack
@@ -134,7 +138,7 @@ def liveTest():
                     vars_[child.tagName] = randomStr(6) if var == "random" else var
 
     for case in livetests.getElementsByTagName("case"):
-        console_output = False
+        parse_from_console_output = False
         count += 1
         name = None
         parse = []
@@ -161,20 +165,28 @@ def liveTest():
                     value = replaceVars(item.getAttribute("value"), vars_)
 
                 if item.hasAttribute("console_output"):
-                    console_output = bool(item.getAttribute("console_output"))
+                    parse_from_console_output = bool(item.getAttribute("console_output"))
 
-                parse.append((value, console_output))
+                parse.append((value, parse_from_console_output))
+
+        conf.verbose = global_.get("verbose", 1)
+        setVerbosity()
 
         msg = "running live test case: %s (%d/%d)" % (name, count, length)
         logger.info(msg)
 
-        try:
-            result = runCase(switches, parse)
-        except SqlmapNotVulnerableException:
-            vulnerable = False
+        initCase(switches, count)
 
         test_case_fd = codecs.open(os.path.join(paths.SQLMAP_OUTPUT_PATH, "test_case"), "wb", UNICODE_ENCODING)
         test_case_fd.write("%s\n" % name)
+
+        try:
+            result = runCase(parse)
+        except SqlmapNotVulnerableException:
+            vulnerable = False
+        finally:
+            conf.verbose = global_.get("verbose", 1)
+            setVerbosity()
 
         if result is True:
             logger.info("test passed")
@@ -221,7 +233,7 @@ def liveTest():
 
     return retVal
 
-def initCase(switches=None):
+def initCase(switches, count):
     global failedItem
     global failedParseOn
     global failedTraceBack
@@ -230,11 +242,13 @@ def initCase(switches=None):
     failedParseOn = None
     failedTraceBack = None
 
-    paths.SQLMAP_OUTPUT_PATH = tempfile.mkdtemp(prefix="sqlmaptest-")
+    paths.SQLMAP_OUTPUT_PATH = tempfile.mkdtemp(prefix="sqlmaptest-%d-" % count)
     paths.SQLMAP_DUMP_PATH = os.path.join(paths.SQLMAP_OUTPUT_PATH, "%s", "dump")
     paths.SQLMAP_FILES_PATH = os.path.join(paths.SQLMAP_OUTPUT_PATH, "%s", "files")
 
     logger.debug("using output directory '%s' for this test case" % paths.SQLMAP_OUTPUT_PATH)
+
+    LOGGER_HANDLER.stream = sys.stdout = tempfile.SpooledTemporaryFile(max_size=0, mode="w+b", prefix="sqlmapstdout-")
 
     cmdLineOptions = cmdLineParser()
 
@@ -243,19 +257,17 @@ def initCase(switches=None):
             if key in cmdLineOptions.__dict__:
                 cmdLineOptions.__dict__[key] = value
 
-    init(cmdLineOptions, True)
+    initOptions(cmdLineOptions, True)
+    init()
 
 def cleanCase():
     shutil.rmtree(paths.SQLMAP_OUTPUT_PATH, True)
 
-def runCase(switches=None, parse=None):
+def runCase(parse):
     global failedItem
     global failedParseOn
     global failedTraceBack
 
-    initCase(switches)
-
-    LOGGER_HANDLER.stream = sys.stdout = tempfile.SpooledTemporaryFile(max_size=0, mode="w+b", prefix="sqlmapstdout-")
     retVal = True
     handled_exception = None
     unhandled_exception = None
@@ -265,7 +277,7 @@ def runCase(switches=None, parse=None):
     try:
         result = start()
     except KeyboardInterrupt:
-        raise
+        pass
     except SqlmapBaseException, e:
         handled_exception = e
     except Exception, e:
@@ -290,8 +302,8 @@ def runCase(switches=None, parse=None):
         with codecs.open(conf.dumper.getOutputFile(), "rb", UNICODE_ENCODING) as f:
             content = f.read()
 
-        for item, console_output in parse:
-            parse_on = console if console_output else content
+        for item, parse_from_console_output in parse:
+            parse_on = console if parse_from_console_output else content
 
             if item.startswith("r'") and item.endswith("'"):
                 if not re.search(item[2:-1], parse_on, re.DOTALL):

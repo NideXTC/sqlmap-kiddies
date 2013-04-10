@@ -22,7 +22,7 @@ from lib.core.common import removeReflectiveValues
 from lib.core.common import singleTimeLogMessage
 from lib.core.common import singleTimeWarnMessage
 from lib.core.common import stdev
-from lib.core.common import wasLastRequestDBMSError
+from lib.core.common import wasLastResponseDBMSError
 from lib.core.data import conf
 from lib.core.data import kb
 from lib.core.data import logger
@@ -90,7 +90,7 @@ def _findUnionCharCount(comment, place, parameter, value, prefix, suffix, where=
         found = kb.orderByColumns or _orderByTechnique()
         if found:
             kb.orderByColumns = found
-            infoMsg = "target url appears to have %d column%s in query" % (found, 's' if found > 1 else "")
+            infoMsg = "target URL appears to have %d column%s in query" % (found, 's' if found > 1 else "")
             singleTimeLogMessage(infoMsg)
             return found
 
@@ -150,7 +150,7 @@ def _findUnionCharCount(comment, place, parameter, value, prefix, suffix, where=
     kb.errorIsNone = popValue()
 
     if retVal:
-        infoMsg = "target url appears to be UNION injectable with %d columns" % retVal
+        infoMsg = "target URL appears to be UNION injectable with %d columns" % retVal
         singleTimeLogMessage(infoMsg)
 
     return retVal
@@ -165,7 +165,7 @@ def _unionPosition(comment, place, parameter, prefix, suffix, count, where=PAYLO
     random.shuffle(positions)
 
     # For each column of the table (# of NULL) perform a request using
-    # the UNION ALL SELECT statement to test it the target url is
+    # the UNION ALL SELECT statement to test it the target URL is
     # affected by an exploitable union SQL injection vulnerability
     for position in positions:
         # Prepare expression with delimiters
@@ -223,7 +223,7 @@ def _unionPosition(comment, place, parameter, prefix, suffix, count, where=PAYLO
                         logger.warn(warnMsg)
                         vector = (position, count, comment, prefix, suffix, kb.uChar, PAYLOAD.WHERE.NEGATIVE, kb.unionDuplicates)
 
-            unionErrorCase = kb.errorIsNone and wasLastRequestDBMSError()
+            unionErrorCase = kb.errorIsNone and wasLastResponseDBMSError()
 
             if unionErrorCase and count > 1:
                 warnMsg = "combined UNION/error-based SQL injection case found on "
@@ -252,7 +252,7 @@ def _unionConfirm(comment, place, parameter, prefix, suffix, count):
 
 def _unionTestByCharBruteforce(comment, place, parameter, value, prefix, suffix):
     """
-    This method tests if the target url is affected by an union
+    This method tests if the target URL is affected by an union
     SQL injection vulnerability. The test is done up to 50 columns
     on the target database table
     """
@@ -297,7 +297,7 @@ def _unionTestByCharBruteforce(comment, place, parameter, value, prefix, suffix)
 
 def unionTest(comment, place, parameter, value, prefix, suffix):
     """
-    This method tests if the target url is affected by an union
+    This method tests if the target URL is affected by an union
     SQL injection vulnerability. The test is done up to 3*50 times
     """
 

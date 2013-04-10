@@ -42,6 +42,7 @@ from lib.core.settings import INFERENCE_GREATER_CHAR
 from lib.core.settings import INFERENCE_EQUALS_CHAR
 from lib.core.settings import INFERENCE_NOT_EQUALS_CHAR
 from lib.core.settings import MAX_TIME_REVALIDATION_STEPS
+from lib.core.settings import PARTIAL_HEX_VALUE_MARKER
 from lib.core.settings import PARTIAL_VALUE_MARKER
 from lib.core.settings import VALID_TIME_CHARS_RUN_THRESHOLD
 from lib.core.threads import getCurrentThreadData
@@ -65,10 +66,17 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
     retVal = hashDBRetrieve(expression, checkConf=True)
 
     if retVal:
-        if PARTIAL_VALUE_MARKER in retVal:
+        if PARTIAL_HEX_VALUE_MARKER in retVal:
+            retVal = retVal.replace(PARTIAL_HEX_VALUE_MARKER, "")
+
+            if retVal and conf.hexConvert:
+                partialValue = retVal
+                infoMsg = "resuming partial value: %s" % safecharencode(partialValue)
+                logger.info(infoMsg)
+        elif PARTIAL_VALUE_MARKER in retVal:
             retVal = retVal.replace(PARTIAL_VALUE_MARKER, "")
 
-            if retVal:
+            if retVal and not conf.hexConvert:
                 partialValue = retVal
                 infoMsg = "resuming partial value: %s" % safecharencode(partialValue)
                 logger.info(infoMsg)
@@ -80,8 +88,13 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
 
     try:
         # Set kb.partRun in case "common prediction" feature (a.k.a. "good
-        # samaritan") is used
-        kb.partRun = getPartRun() if conf.predictOutput else None
+        # samaritan") is used or the engine is called from the API
+        if conf.predictOutput:
+            kb.partRun = getPartRun()
+        elif hasattr(conf, "api"):
+            kb.partRun = getPartRun(alias=False)
+        else:
+            kb.partRun = None
 
         if partialValue:
             firstChar = len(partialValue)
@@ -143,7 +156,7 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
             warnMsg += "usage of option '--threads' for faster data retrieval"
             singleTimeWarnMessage(warnMsg)
 
-        if conf.verbose in (1, 2) and not showEta:
+        if conf.verbose in (1, 2) and not showEta and not hasattr(conf, "api"):
             if isinstance(length, int) and conf.threads > 1:
                 dataToStdout("[%s] [INFO] retrieved: %s" % (time.strftime("%X"), "_" * min(length, conf.progressWidth)))
                 dataToStdout("\r[%s] [INFO] retrieved: " % time.strftime("%X"))
@@ -417,7 +430,7 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                                 if (endCharIndex - startCharIndex == conf.progressWidth) and (endCharIndex < length - 1):
                                     output = output[:-2] + '..'
 
-                                if conf.verbose in (1, 2) and not showEta:
+                                if conf.verbose in (1, 2) and not showEta and not hasattr(conf, "api"):
                                     _ = count - firstChar
                                     output += '_' * (min(length, conf.progressWidth) - len(output))
                                     status = ' %d/%d (%d%%)' % (_, length, round(100.0 * _ / length))
@@ -431,12 +444,13 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                 abortedFlag = True
 
             finally:
-                value = [partialValue[_] if _ < len(partialValue) else threadData.shared.value[_] for _ in xrange(length)]
+                value = [_ for _ in partialValue]
+                value.extend(_ for _ in threadData.shared.value)
 
             infoMsg = None
 
             # If we have got one single character not correctly fetched it
-            # can mean that the connection to the target url was lost
+            # can mean that the connection to the target URL was lost
             if None in value:
                 partialValue = "".join(value[:value.index(None)])
 
@@ -446,7 +460,7 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                 finalValue = "".join(value)
                 infoMsg = "\r[%s] [INFO] retrieved: %s" % (time.strftime("%X"), filterControlChars(finalValue))
 
-            if conf.verbose in (1, 2) and not showEta and infoMsg:
+            if conf.verbose in (1, 2) and not showEta and infoMsg and not hasattr(conf, "api"):
                 dataToStdout(infoMsg)
 
         # No multi-threading (--threads = 1)
@@ -469,8 +483,11 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                     if commonValue is not None:
                         # One-shot query containing equals commonValue
                         testValue = unescaper.escape("'%s'" % commonValue) if "'" not in commonValue else unescaper.escape("%s" % commonValue, quote=False)
-                        query = agent.prefixQuery(safeStringFormat("AND (%s) = %s", (expressionUnescaped, testValue)))
+
+                        query = kb.injection.data[kb.technique].vector
+                        query = agent.prefixQuery(query.replace("[INFERENCE]", "(%s)=%s" % (expressionUnescaped, testValue)))
                         query = agent.suffixQuery(query)
+
                         result = Request.queryPage(agent.payload(newValue=query), timeBasedCompare=timeBasedCompare, raise404=False)
                         incrementCounter(kb.technique)
 
@@ -478,11 +495,10 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                         if result:
                             if showEta:
                                 etaProgressUpdate(time.time() - charStart, len(commonValue))
-                            elif conf.verbose in (1, 2):
+                            elif conf.verbose in (1, 2) or hasattr(conf, "api"):
                                 dataToStdout(filterControlChars(commonValue[index - 1:]))
 
                             finalValue = commonValue
-
                             break
 
                     # If there is a common pattern starting with partialValue,
@@ -491,8 +507,11 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                         # Substring-query containing equals commonPattern
                         subquery = queries[Backend.getIdentifiedDbms()].substring.query % (expressionUnescaped, 1, len(commonPattern))
                         testValue = unescaper.escape("'%s'" % commonPattern) if "'" not in commonPattern else unescaper.escape("%s" % commonPattern, quote=False)
-                        query = agent.prefixQuery(safeStringFormat("AND (%s) = %s", (subquery, testValue)))
+
+                        query = kb.injection.data[kb.technique].vector
+                        query = agent.prefixQuery(query.replace("[INFERENCE]", "(%s)=%s" % (subquery, testValue)))
                         query = agent.suffixQuery(query)
+
                         result = Request.queryPage(agent.payload(newValue=query), timeBasedCompare=timeBasedCompare, raise404=False)
                         incrementCounter(kb.technique)
 
@@ -515,7 +534,7 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
                 else:
                     val = getChar(index, asciiTbl)
 
-                if val is None or (lastChar > 0 and index > lastChar):
+                if val is None:
                     finalValue = partialValue
                     break
 
@@ -526,12 +545,18 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
 
                 if showEta:
                     etaProgressUpdate(time.time() - charStart, index)
-                elif conf.verbose in (1, 2):
+                elif conf.verbose in (1, 2) or hasattr(conf, "api"):
                     dataToStdout(filterControlChars(val))
 
                 # some DBMSes (e.g. Firebird, DB2, etc.) have issues with trailing spaces
                 if len(partialValue) > INFERENCE_BLANK_BREAK and partialValue[-INFERENCE_BLANK_BREAK:].isspace() and partialValue.strip(' ')[-1:] != '\n':
                     finalValue = partialValue[:-INFERENCE_BLANK_BREAK]
+                    break
+
+                if (lastChar > 0 and index >= lastChar):
+                    finalValue = "" if length == 0 else partialValue
+                    finalValue = finalValue.rstrip() if len(finalValue) > 1 else finalValue
+                    partialValue = None
                     break
 
     except KeyboardInterrupt:
@@ -545,13 +570,13 @@ def bisection(payload, expression, length=None, charsetType=None, firstChar=None
             finalValue = decodeHexValue(finalValue) if conf.hexConvert else finalValue
             hashDBWrite(expression, finalValue)
         elif partialValue:
-            hashDBWrite(expression, "%s%s" % (PARTIAL_VALUE_MARKER, partialValue))
+            hashDBWrite(expression, "%s%s" % (PARTIAL_VALUE_MARKER if not conf.hexConvert else PARTIAL_HEX_VALUE_MARKER, partialValue))
 
-    if conf.hexConvert and not abortedFlag:
+    if conf.hexConvert and not abortedFlag and not hasattr(conf, "api"):
         infoMsg = "\r[%s] [INFO] retrieved: %s  %s\n" % (time.strftime("%X"), filterControlChars(finalValue), " " * retrievedLength)
         dataToStdout(infoMsg)
     else:
-        if conf.verbose in (1, 2) or showEta:
+        if conf.verbose in (1, 2) or showEta and not hasattr(conf, "api"):
             dataToStdout("\n")
 
         if (conf.verbose in (1, 2) and showEta) or conf.verbose >= 3:

@@ -16,6 +16,7 @@ from lib.core.common import isNumPosStrValue
 from lib.core.common import isTechniqueAvailable
 from lib.core.common import readInput
 from lib.core.common import safeSQLIdentificatorNaming
+from lib.core.common import safeStringFormat
 from lib.core.common import unArrayizeValue
 from lib.core.common import unsafeSQLIdentificatorNaming
 from lib.core.data import conf
@@ -56,6 +57,7 @@ class Search:
         dbConsider, dbCondParam = self.likeOrExact("database")
 
         for db in dbList:
+            values = []
             db = safeSQLIdentificatorNaming(db)
 
             if Backend.getIdentifiedDbms() in (DBMS.ORACLE, DBMS.DB2):
@@ -82,8 +84,8 @@ class Search:
                     query = rootQuery.inband.query2
                 else:
                     query = rootQuery.inband.query
-                query += dbQuery
-                query += exclDbsQuery
+
+                query = query % (dbQuery + exclDbsQuery)
                 values = inject.getValue(query, blind=False, time=False)
 
                 if not isNoneValue(values):
@@ -93,7 +95,7 @@ class Search:
                         value = safeSQLIdentificatorNaming(value)
                         foundDbs.append(value)
 
-            if len(foundDbs) == 0 and isInferenceAvailable() and not conf.direct:
+            if not values and isInferenceAvailable() and not conf.direct:
                 infoMsg = "fetching number of database"
                 if dbConsider == "1":
                     infoMsg += "s like"
@@ -105,8 +107,7 @@ class Search:
                 else:
                     query = rootQuery.blind.count
 
-                query += dbQuery
-                query += exclDbsQuery
+                query = query % (dbQuery + exclDbsQuery)
                 count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
                 if not isNumPosStrValue(count):
@@ -125,10 +126,8 @@ class Search:
                         query = rootQuery.blind.query2
                     else:
                         query = rootQuery.blind.query
-                    query += dbQuery
-                    query += exclDbsQuery
-                    if Backend.isDbms(DBMS.DB2):
-                        query += ") AS foobar"
+
+                    query = query % (dbQuery + exclDbsQuery)
                     query = agent.limitQuery(index, query, dbCond)
 
                     value = unArrayizeValue(inject.getValue(query, union=False, error=False))
@@ -162,10 +161,10 @@ class Search:
         rootQuery = queries[Backend.getIdentifiedDbms()].search_table
         tblCond = rootQuery.inband.condition
         dbCond = rootQuery.inband.condition2
-        whereDbsQuery = ""
         tblConsider, tblCondParam = self.likeOrExact("table")
 
         for tbl in tblList:
+            values = []
             tbl = safeSQLIdentificatorNaming(tbl, True)
 
             if Backend.getIdentifiedDbms() in (DBMS.ORACLE, DBMS.DB2, DBMS.FIREBIRD):
@@ -176,7 +175,7 @@ class Search:
                 infoMsg += "s like"
             infoMsg += " '%s'" % unsafeSQLIdentificatorNaming(tbl)
 
-            if conf.db and conf.db != CURRENT_DB:
+            if dbCond and conf.db and conf.db != CURRENT_DB:
                 _ = conf.db.split(",")
                 whereDbsQuery = " AND (" + " OR ".join("%s = '%s'" % (dbCond, unsafeSQLIdentificatorNaming(db)) for db in _) + ")"
                 infoMsg += " for database%s '%s'" % ("s" if len(_) > 1 else "", ", ".join(db for db in _))
@@ -184,16 +183,18 @@ class Search:
                 whereDbsQuery = "".join(" AND '%s' != %s" % (unsafeSQLIdentificatorNaming(db), dbCond) for db in self.excludeDbsList)
                 infoMsg2 = "skipping system database%s '%s'" % ("s" if len(self.excludeDbsList) > 1 else "", ", ".join(db for db in self.excludeDbsList))
                 logger.info(infoMsg2)
+            else:
+                whereDbsQuery = ""
 
             logger.info(infoMsg)
 
             tblQuery = "%s%s" % (tblCond, tblCondParam)
-            tblQuery = tblQuery % tbl
+            tblQuery = tblQuery % unsafeSQLIdentificatorNaming(tbl)
 
             if any(isTechniqueAvailable(_) for _ in (PAYLOAD.TECHNIQUE.UNION, PAYLOAD.TECHNIQUE.ERROR, PAYLOAD.TECHNIQUE.QUERY)) or conf.direct:
                 query = rootQuery.inband.query
-                query += tblQuery
-                query += whereDbsQuery
+
+                query = query % (tblQuery + whereDbsQuery)
                 values = inject.getValue(query, blind=False, time=False)
 
                 if values and Backend.getIdentifiedDbms() in (DBMS.SQLITE, DBMS.FIREBIRD):
@@ -219,49 +220,51 @@ class Search:
                     else:
                         foundTbls[foundDb] = [foundTbl]
 
-            if len(foundTbls) == 0 and isInferenceAvailable() and not conf.direct:
+            if not values and isInferenceAvailable() and not conf.direct:
                 if Backend.getIdentifiedDbms() not in (DBMS.SQLITE, DBMS.FIREBIRD):
-                    infoMsg = "fetching number of databases with table"
-                    if tblConsider == "1":
-                        infoMsg += "s like"
-                    infoMsg += " '%s'" % unsafeSQLIdentificatorNaming(tbl)
-                    logger.info(infoMsg)
-
-                    query = rootQuery.blind.count
-                    query += tblQuery
-                    query += whereDbsQuery
-                    count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
-
-                    if not isNumPosStrValue(count):
-                        warnMsg = "no databases have table"
+                    if len(whereDbsQuery) == 0:
+                        infoMsg = "fetching number of databases with table"
                         if tblConsider == "1":
-                            warnMsg += "s like"
-                        warnMsg += " '%s'" % unsafeSQLIdentificatorNaming(tbl)
-                        logger.warn(warnMsg)
+                            infoMsg += "s like"
+                        infoMsg += " '%s'" % unsafeSQLIdentificatorNaming(tbl)
+                        logger.info(infoMsg)
 
-                        continue
+                        query = rootQuery.blind.count
+                        query = query % (tblQuery + whereDbsQuery)
+                        count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
-                    indexRange = getLimitRange(count)
+                        if not isNumPosStrValue(count):
+                            warnMsg = "no databases have table"
+                            if tblConsider == "1":
+                                warnMsg += "s like"
+                            warnMsg += " '%s'" % unsafeSQLIdentificatorNaming(tbl)
+                            logger.warn(warnMsg)
 
-                    for index in indexRange:
-                        query = rootQuery.blind.query
-                        query += tblQuery
-                        query += whereDbsQuery
-                        if Backend.isDbms(DBMS.DB2):
-                            query += ") AS foobar"
-                        query = agent.limitQuery(index, query)
+                            continue
 
-                        foundDb = unArrayizeValue(inject.getValue(query, union=False, error=False))
-                        foundDb = safeSQLIdentificatorNaming(foundDb)
+                        indexRange = getLimitRange(count)
 
-                        if foundDb not in foundTbls:
-                            foundTbls[foundDb] = []
+                        for index in indexRange:
+                            query = rootQuery.blind.query
+                            query = query % (tblQuery + whereDbsQuery)
+                            query = agent.limitQuery(index, query)
+
+                            foundDb = unArrayizeValue(inject.getValue(query, union=False, error=False))
+                            foundDb = safeSQLIdentificatorNaming(foundDb)
+
+                            if foundDb not in foundTbls:
+                                foundTbls[foundDb] = []
+
+                            if tblConsider == "2":
+                                foundTbls[foundDb].append(tbl)
 
                         if tblConsider == "2":
-                            foundTbls[foundDb].append(tbl)
-
-                    if tblConsider == "2":
-                        continue
+                            continue
+                    else:
+                        for db in conf.db.split(","):
+                            db = safeSQLIdentificatorNaming(db)
+                            if db not in foundTbls:
+                                foundTbls[db] = []
                 else:
                     dbName = "SQLite" if Backend.isDbms(DBMS.SQLITE) else "Firebird"
                     foundTbls["%s%s" % (dbName, METADB_SUFFIX)] = []
@@ -272,13 +275,14 @@ class Search:
                     infoMsg = "fetching number of table"
                     if tblConsider == "1":
                         infoMsg += "s like"
-                    infoMsg += " '%s' in database '%s'" % (unsafeSQLIdentificatorNaming(tbl), db)
+                    infoMsg += " '%s' in database '%s'" % (unsafeSQLIdentificatorNaming(tbl), unsafeSQLIdentificatorNaming(db))
                     logger.info(infoMsg)
 
                     query = rootQuery.blind.count2
                     if Backend.getIdentifiedDbms() not in (DBMS.SQLITE, DBMS.FIREBIRD):
                         query = query % unsafeSQLIdentificatorNaming(db)
                     query += " AND %s" % tblQuery
+
                     count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
                     if not isNumPosStrValue(count):
@@ -286,7 +290,7 @@ class Search:
                         if tblConsider == "1":
                             warnMsg += "s like"
                         warnMsg += " '%s' " % unsafeSQLIdentificatorNaming(tbl)
-                        warnMsg += "in database '%s'" % db
+                        warnMsg += "in database '%s'" % unsafeSQLIdentificatorNaming(db)
                         logger.warn(warnMsg)
 
                         continue
@@ -296,21 +300,29 @@ class Search:
                     for index in indexRange:
                         query = rootQuery.blind.query2
 
+                        if query.endswith("'%s')"):
+                            query = query[:-1] + " AND %s)" % tblQuery
+                        else:
+                            query += " AND %s" % tblQuery
+
                         if Backend.isDbms(DBMS.FIREBIRD):
-                            query = query % index
+                            query = safeStringFormat(query, index)
 
                         if Backend.getIdentifiedDbms() not in (DBMS.SQLITE, DBMS.FIREBIRD):
-                            query = query % unsafeSQLIdentificatorNaming(db)
-
-                        query += " AND %s" % tblQuery
+                            query = safeStringFormat(query, unsafeSQLIdentificatorNaming(db))
 
                         if not Backend.isDbms(DBMS.FIREBIRD):
                             query = agent.limitQuery(index, query)
 
                         foundTbl = unArrayizeValue(inject.getValue(query, union=False, error=False))
-                        kb.hintValue = foundTbl
-                        foundTbl = safeSQLIdentificatorNaming(foundTbl, True)
-                        foundTbls[db].append(foundTbl)
+                        if not isNoneValue(foundTbl):
+                            kb.hintValue = foundTbl
+                            foundTbl = safeSQLIdentificatorNaming(foundTbl, True)
+                            foundTbls[db].append(foundTbl)
+
+        for db in foundTbls.keys():
+            if isNoneValue(foundTbls[db]):
+                del foundTbls[db]
 
         if not foundTbls:
             warnMsg = "no databases contain any of the provided tables"
@@ -364,6 +376,7 @@ class Search:
         colConsider, colCondParam = self.likeOrExact("column")
 
         for column in colList:
+            values = []
             column = safeSQLIdentificatorNaming(column)
             conf.db = origDb
             conf.tbl = origTbl
@@ -381,15 +394,15 @@ class Search:
             if conf.tbl:
                 _ = conf.tbl.split(",")
                 whereTblsQuery = " AND (" + " OR ".join("%s = '%s'" % (tblCond, unsafeSQLIdentificatorNaming(tbl)) for tbl in _) + ")"
-                infoMsgTbl = " for table%s '%s'" % ("s" if len(_) > 1 else "", ", ".join(tbl for tbl in _))
+                infoMsgTbl = " for table%s '%s'" % ("s" if len(_) > 1 else "", ", ".join(unsafeSQLIdentificatorNaming(tbl) for tbl in _))
 
             if conf.db and conf.db != CURRENT_DB:
                 _ = conf.db.split(",")
                 whereDbsQuery = " AND (" + " OR ".join("%s = '%s'" % (dbCond, unsafeSQLIdentificatorNaming(db)) for db in _) + ")"
-                infoMsgDb = " in database%s '%s'" % ("s" if len(_) > 1 else "", ", ".join(db for db in _))
+                infoMsgDb = " in database%s '%s'" % ("s" if len(_) > 1 else "", ", ".join(unsafeSQLIdentificatorNaming(db) for db in _))
             elif conf.excludeSysDbs:
                 whereDbsQuery = "".join(" AND %s != '%s'" % (dbCond, unsafeSQLIdentificatorNaming(db)) for db in self.excludeDbsList)
-                infoMsg2 = "skipping system database%s '%s'" % ("s" if len(self.excludeDbsList) > 1 else "", ", ".join(db for db in self.excludeDbsList))
+                infoMsg2 = "skipping system database%s '%s'" % ("s" if len(self.excludeDbsList) > 1 else "", ", ".join(unsafeSQLIdentificatorNaming(db) for db in self.excludeDbsList))
                 logger.info(infoMsg2)
             else:
                 infoMsgDb = " across all databases"
@@ -404,9 +417,7 @@ class Search:
                     # Enumerate tables containing the column provided if
                     # either of database(s) or table(s) is not provided
                     query = rootQuery.inband.query
-                    query += colQuery
-                    query += whereDbsQuery
-                    query += whereTblsQuery
+                    query = query % (colQuery + whereDbsQuery + whereTblsQuery)
                     values = inject.getValue(query, blind=False, time=False)
                 else:
                     # Assume provided databases' tables contain the
@@ -415,7 +426,7 @@ class Search:
 
                     for db in conf.db.split(","):
                         for tbl in conf.tbl.split(","):
-                            values.append([db, tbl])
+                            values.append([safeSQLIdentificatorNaming(db), safeSQLIdentificatorNaming(tbl, True)])
 
                 for db, tbl in filterPairValues(values):
                     db = safeSQLIdentificatorNaming(db)
@@ -449,25 +460,23 @@ class Search:
 
                         kb.data.cachedColumns = {}
 
-            if len(dbs) == 0 and isInferenceAvailable() and not conf.direct:
+            if not values and isInferenceAvailable() and not conf.direct:
                 if not conf.db:
                     infoMsg = "fetching number of databases with tables containing column"
                     if colConsider == "1":
                         infoMsg += "s like"
-                    infoMsg += " '%s'" % column
+                    infoMsg += " '%s'" % unsafeSQLIdentificatorNaming(column)
                     logger.info("%s%s%s" % (infoMsg, infoMsgTbl, infoMsgDb))
 
                     query = rootQuery.blind.count
-                    query += colQuery
-                    query += whereDbsQuery
-                    query += whereTblsQuery
+                    query = query % (colQuery + whereDbsQuery + whereTblsQuery)
                     count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
                     if not isNumPosStrValue(count):
                         warnMsg = "no databases have tables containing column"
                         if colConsider == "1":
                             warnMsg += "s like"
-                        warnMsg += " '%s'" % column
+                        warnMsg += " '%s'" % unsafeSQLIdentificatorNaming(column)
                         logger.warn("%s%s" % (warnMsg, infoMsgTbl))
 
                         continue
@@ -476,12 +485,9 @@ class Search:
 
                     for index in indexRange:
                         query = rootQuery.blind.query
-                        query += colQuery
-                        query += whereDbsQuery
-                        query += whereTblsQuery
-                        if Backend.isDbms(DBMS.DB2):
-                            query += ") AS foobar"
+                        query = query % (colQuery + whereDbsQuery + whereTblsQuery)
                         query = agent.limitQuery(index, query)
+
                         db = unArrayizeValue(inject.getValue(query, union=False, error=False))
                         db = safeSQLIdentificatorNaming(db)
 
@@ -492,6 +498,7 @@ class Search:
                             foundCols[column][db] = []
                 else:
                     for db in conf.db.split(","):
+                        db = safeSQLIdentificatorNaming(db)
                         if db not in foundCols[column]:
                             foundCols[column][db] = []
 
@@ -500,31 +507,31 @@ class Search:
 
                 for column, dbData in foundCols.items():
                     colQuery = "%s%s" % (colCond, colCondParam)
-                    colQuery = colQuery % column
+                    colQuery = colQuery % unsafeSQLIdentificatorNaming(column)
 
                     for db in dbData:
-                        db = safeSQLIdentificatorNaming(db)
                         conf.db = origDb
                         conf.tbl = origTbl
 
                         infoMsg = "fetching number of tables containing column"
                         if colConsider == "1":
                             infoMsg += "s like"
-                        infoMsg += " '%s' in database '%s'" % (unsafeSQLIdentificatorNaming(column), db)
+                        infoMsg += " '%s' in database '%s'" % (unsafeSQLIdentificatorNaming(column), unsafeSQLIdentificatorNaming(db))
                         logger.info(infoMsg)
 
                         query = rootQuery.blind.count2
-                        query = query % db
+                        query = query % unsafeSQLIdentificatorNaming(db)
                         query += " AND %s" % colQuery
                         query += whereTblsQuery
+
                         count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
                         if not isNumPosStrValue(count):
                             warnMsg = "no tables contain column"
                             if colConsider == "1":
                                 warnMsg += "s like"
-                            warnMsg += " '%s' " % column
-                            warnMsg += "in database '%s'" % db
+                            warnMsg += " '%s' " % unsafeSQLIdentificatorNaming(column)
+                            warnMsg += "in database '%s'" % unsafeSQLIdentificatorNaming(db)
                             logger.warn(warnMsg)
 
                             continue
@@ -533,10 +540,15 @@ class Search:
 
                         for index in indexRange:
                             query = rootQuery.blind.query2
-                            query = query % db
-                            query += " AND %s" % colQuery
-                            query += whereTblsQuery
+
+                            if query.endswith("'%s')"):
+                                query = query[:-1] + " AND %s)" % (colQuery + whereTblsQuery)
+                            else:
+                                query += " AND %s" % (colQuery + whereTblsQuery)
+
+                            query = safeStringFormat(query, unsafeSQLIdentificatorNaming(db))
                             query = agent.limitQuery(index, query)
+
                             tbl = unArrayizeValue(inject.getValue(query, union=False, error=False))
                             kb.hintValue = tbl
 

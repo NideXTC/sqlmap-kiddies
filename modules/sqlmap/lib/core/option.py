@@ -6,6 +6,7 @@ See the file 'doc/COPYING' for copying permission
 """
 
 import cookielib
+import glob
 import inspect
 import logging
 import os
@@ -52,8 +53,6 @@ from lib.core.common import setPaths
 from lib.core.common import singleTimeWarnMessage
 from lib.core.common import UnicodeRawConfigParser
 from lib.core.common import urldecode
-from lib.core.common import urlencode
-from lib.core.convert import base64pickle
 from lib.core.convert import base64unpickle
 from lib.core.data import conf
 from lib.core.data import kb
@@ -65,9 +64,10 @@ from lib.core.defaults import defaults
 from lib.core.dicts import DBMS_DICT
 from lib.core.dicts import DUMP_REPLACEMENTS
 from lib.core.enums import ADJUST_TIME_DELAY
+from lib.core.enums import AUTH_TYPE
 from lib.core.enums import CUSTOM_LOGGING
 from lib.core.enums import DUMP_FORMAT
-from lib.core.enums import HTTPHEADER
+from lib.core.enums import HTTP_HEADER
 from lib.core.enums import HTTPMETHOD
 from lib.core.enums import MOBILES
 from lib.core.enums import PAYLOAD
@@ -86,7 +86,6 @@ from lib.core.exception import SqlmapSyntaxException
 from lib.core.exception import SqlmapUnsupportedDBMSException
 from lib.core.exception import SqlmapUserQuitException
 from lib.core.log import FORMATTER
-from lib.core.log import LOGGER_HANDLER
 from lib.core.optiondict import optDict
 from lib.core.purge import purge
 from lib.core.settings import ACCESS_ALIASES
@@ -95,7 +94,6 @@ from lib.core.settings import CODECS_LIST_PAGE
 from lib.core.settings import CRAWL_EXCLUDE_EXTENSIONS
 from lib.core.settings import CUSTOM_INJECTION_MARK_CHAR
 from lib.core.settings import DB2_ALIASES
-from lib.core.settings import DEFAULT_GET_POST_DELIMITER
 from lib.core.settings import DEFAULT_PAGE_ENCODING
 from lib.core.settings import DEFAULT_TOR_HTTP_PORTS
 from lib.core.settings import DEFAULT_TOR_SOCKS_PORT
@@ -104,6 +102,7 @@ from lib.core.settings import INJECT_HERE_MARK
 from lib.core.settings import IS_WIN
 from lib.core.settings import LOCALHOST
 from lib.core.settings import MAXDB_ALIASES
+from lib.core.settings import MAX_CONNECT_RETRIES
 from lib.core.settings import MAX_NUMBER_OF_THREADS
 from lib.core.settings import MSSQL_ALIASES
 from lib.core.settings import MYSQL_ALIASES
@@ -111,13 +110,13 @@ from lib.core.settings import NULL
 from lib.core.settings import ORACLE_ALIASES
 from lib.core.settings import PARAMETER_SPLITTING_REGEX
 from lib.core.settings import PGSQL_ALIASES
+from lib.core.settings import PROBLEMATIC_CUSTOM_INJECTION_PATTERNS
 from lib.core.settings import SITE
 from lib.core.settings import SQLITE_ALIASES
 from lib.core.settings import SUPPORTED_DBMS
 from lib.core.settings import SUPPORTED_OS
 from lib.core.settings import SYBASE_ALIASES
 from lib.core.settings import TIME_DELAY_CANDIDATES
-from lib.core.settings import UNENCODED_ORIGINAL_VALUE
 from lib.core.settings import UNION_CHAR_REGEX
 from lib.core.settings import UNKNOWN_DBMS_VERSION
 from lib.core.settings import URI_INJECTABLE_REGEX
@@ -190,7 +189,7 @@ def _urllib2Opener():
 
 def _feedTargetsDict(reqFile, addedTargetUrls):
     """
-    Parses web scarab and burp logs and adds results to the target url list
+    Parses web scarab and burp logs and adds results to the target URL list
     """
 
     def _parseWebScarabLog(content):
@@ -242,10 +241,10 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
             else:
                 scheme, port = None, None
 
-            if not re.search(r"^[\n]*(GET|POST).*?\sHTTP\/", request, re.I | re.M):
+            if not re.search(r"^[\n]*(%s).*?\sHTTP\/" % "|".join(getPublicTypeMembers(HTTPMETHOD, True)), request, re.I | re.M):
                 continue
 
-            if re.search(r"^[\n]*(GET|POST).*?\.(%s)\sHTTP\/" % "|".join(CRAWL_EXCLUDE_EXTENSIONS), request, re.I | re.M):
+            if re.search(r"^[\n]*(%s|%s).*?\.(%s)\sHTTP\/" % (HTTPMETHOD.GET, HTTPMETHOD.POST, "|".join(CRAWL_EXCLUDE_EXTENSIONS)), request, re.I | re.M):
                 continue
 
             getPostReq = False
@@ -255,22 +254,22 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
             data = None
             cookie = None
             params = False
-            lines = request.split("\n")
+            newline = None
+            lines = request.split('\n')
 
             for line in lines:
-                if len(line) == 0 or line == "\n":
-                    if method == HTTPMETHOD.POST and data is None:
+                newline = "\r\n" if line.endswith('\r') else '\n'
+                line = line.strip('\r')
+                match = re.search(r"\A(%s) (.+) HTTP/[\d.]+\Z" % "|".join(getPublicTypeMembers(HTTPMETHOD, True)), line) if not method else None
+
+                if len(line) == 0:
+                    if method in (HTTPMETHOD.POST, HTTPMETHOD.PUT) and data is None:
                         data = ""
                         params = True
 
-                elif (line.startswith("GET ") or line.startswith("POST ")) and " HTTP/" in line:
-                    if line.startswith("GET "):
-                        index = 4
-                    else:
-                        index = 5
-
-                    url = line[index:line.index(" HTTP/")]
-                    method = line[:index - 1]
+                elif match:
+                    method = match.group(1)
+                    url = match.group(2)
 
                     if "?" in line and "=" in line:
                         params = True
@@ -279,7 +278,7 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
 
                 # POST parameters
                 elif data is not None and params:
-                    data += "%s%s" % ("\n" if data else "", line)
+                    data += "%s%s" % (line, newline)
 
                 # GET parameters
                 elif "?" in line and "=" in line and ": " not in line:
@@ -290,26 +289,31 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
                     key, value = line.split(": ", 1)
 
                     # Cookie and Host headers
-                    if key.upper() == HTTPHEADER.COOKIE.upper():
+                    if key.upper() == HTTP_HEADER.COOKIE.upper():
                         cookie = value
-                    elif key.upper() == HTTPHEADER.HOST.upper():
+                    elif key.upper() == HTTP_HEADER.HOST.upper():
                         if '://' in value:
                             scheme, value = value.split('://')[:2]
                         splitValue = value.split(":")
                         host = splitValue[0]
 
                         if len(splitValue) > 1:
-                            port = filterStringValue(splitValue[1], '[0-9]')
+                            port = filterStringValue(splitValue[1], "[0-9]")
 
                     # Avoid to add a static content length header to
                     # conf.httpHeaders and consider the following lines as
                     # POSTed data
-                    if key.upper() == HTTPHEADER.CONTENT_LENGTH.upper():
+                    if key.upper() == HTTP_HEADER.CONTENT_LENGTH.upper():
                         params = True
 
                     # Avoid proxy and connection type related headers
-                    elif key not in (HTTPHEADER.PROXY_CONNECTION, HTTPHEADER.CONNECTION):
+                    elif key not in (HTTP_HEADER.PROXY_CONNECTION, HTTP_HEADER.CONNECTION):
                         conf.httpHeaders.append((getUnicode(key), getUnicode(value)))
+
+                    if CUSTOM_INJECTION_MARK_CHAR in re.sub(PROBLEMATIC_CUSTOM_INJECTION_PATTERNS, "", value or ""):
+                        params = True
+
+            data = data.rstrip("\r\n") if data else data
 
             if getPostReq and (params or cookie):
                 if not port and isinstance(scheme, basestring) and scheme.lower() == "https":
@@ -320,6 +324,10 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
                 if conf.forceSSL:
                     scheme = "https"
                     port = port or "443"
+
+                if not host:
+                    errMsg = "invalid format of a request file"
+                    raise SqlmapSyntaxException, errMsg
 
                 if not url.startswith("http"):
                     url = "%s://%s:%s%s" % (scheme or "http", host, port or "80", url)
@@ -334,13 +342,17 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
     fp = openFile(reqFile, "rb")
 
     content = fp.read()
-    content = content.replace("\r", "")
 
     if conf.scope:
         logger.info("using regular expression '%s' for filtering targets" % conf.scope)
 
     _parseBurpLog(content)
     _parseWebScarabLog(content)
+
+    if not addedTargetUrls:
+        errMsg = "unable to find usable request(s) "
+        errMsg += "in provided file ('%s')" % reqFile
+        raise SqlmapGenericException(errMsg)
 
 def _loadQueries():
     """
@@ -464,7 +476,21 @@ def _setCrawler():
     if not conf.crawlDepth:
         return
 
-    crawl(conf.url)
+    if not conf.bulkFile:
+        crawl(conf.url)
+    else:
+        targets = getFileItems(conf.bulkFile)
+        for i in xrange(len(targets)):
+            try:
+                target = targets[i]
+                crawl(target)
+
+                if conf.verbose in (1, 2):
+                    status = '%d/%d links visited (%d%%)' % (i + 1, len(targets), round(100.0 * (i + 1) / len(targets)))
+                    dataToStdout("\r[%s] [INFO] %s" % (time.strftime("%X"), status), True)
+            except Exception, ex:
+                errMsg = "problem occured while crawling at '%s' ('%s')" % (target, ex)
+                logger.error(errMsg)
 
 def _setGoogleDorking():
     """
@@ -565,7 +591,7 @@ def _setBulkMultipleTargets():
         raise SqlmapFilePathException(errMsg)
 
     for line in getFileItems(conf.bulkFile):
-        if re.search(r"[^ ]+\?(.+)", line, re.I):
+        if re.search(r"[^ ]+\?(.+)", line, re.I) or CUSTOM_INJECTION_MARK_CHAR in line:
             kb.targets.add((line.strip(), None, None, None))
 
 def _findPageForms():
@@ -891,6 +917,38 @@ def _setTamperingFunctions():
             for _, function in priorities:
                 kb.tamperFunctions.append(function)
 
+def _setWafFunctions():
+    """
+    Loads WAF/IDS/IPS detecting functions from script(s)
+    """
+
+    if conf.identifyWaf:
+        for found in glob.glob(os.path.join(paths.SQLMAP_WAF_PATH, "*.py")):
+            dirname, filename = os.path.split(found)
+            dirname = os.path.abspath(dirname)
+
+            if filename == "__init__.py":
+                continue
+
+            debugMsg = "loading WAF script '%s'" % filename[:-3]
+            logger.debug(debugMsg)
+
+            if dirname not in sys.path:
+                sys.path.insert(0, dirname)
+
+            try:
+                module = __import__(filename[:-3])
+            except ImportError, msg:
+                raise SqlmapSyntaxException("cannot import WAF script '%s' (%s)" % (filename[:-3], msg))
+
+            _ = dict(inspect.getmembers(module))
+            if "detect" not in _:
+                errMsg = "missing function 'detect(page, headers, code)' "
+                errMsg += "in WAF script '%s'" % found
+                raise SqlmapGenericException(errMsg)
+            else:
+                kb.wafFunctions.append((_["detect"], _.get("__product__", filename[:-3])))
+
 def _setThreads():
     if not isinstance(conf.threads, int) or conf.threads <= 0:
         conf.threads = 1
@@ -914,7 +972,7 @@ def _setDNSCache():
 
 def _setHTTPProxy():
     """
-    Check and set the HTTP proxy to pass by all HTTP requests.
+    Check and set the HTTP/SOCKS proxy for all HTTP requests.
     """
 
     global proxyHandler
@@ -925,7 +983,7 @@ def _setHTTPProxy():
 
         return
 
-    debugMsg = "setting the HTTP/SOCKS proxy to pass by all HTTP requests"
+    debugMsg = "setting the HTTP/SOCKS proxy for all HTTP requests"
     logger.debug(debugMsg)
 
     proxySplit = urlparse.urlsplit(conf.proxy)
@@ -984,7 +1042,7 @@ def _setSafeUrl():
             conf.safUrl = "http://" + conf.safUrl
 
     if conf.saFreq <= 0:
-        errMsg = "please provide a valid value (>0) for safe frequency (--safe-freq) while using safe url feature"
+        errMsg = "please provide a valid value (>0) for safe frequency (--safe-freq) while using safe URL feature"
         raise SqlmapSyntaxException(errMsg)
 
 def _setPrefixSuffix():
@@ -1052,15 +1110,15 @@ def _setHTTPAuthentication():
 
         aTypeLower = conf.aType.lower()
 
-        if aTypeLower not in ("basic", "digest", "ntlm"):
+        if aTypeLower not in (AUTH_TYPE.BASIC, AUTH_TYPE.DIGEST, AUTH_TYPE.NTLM):
             errMsg = "HTTP authentication type value must be "
             errMsg += "Basic, Digest or NTLM"
             raise SqlmapSyntaxException(errMsg)
-        elif aTypeLower in ("basic", "digest"):
+        elif aTypeLower in (AUTH_TYPE.BASIC, AUTH_TYPE.DIGEST):
             regExp = "^(.*?):(.*?)$"
             errMsg = "HTTP %s authentication credentials " % aTypeLower
             errMsg += "value must be in format username:password"
-        elif aTypeLower == "ntlm":
+        elif aTypeLower == AUTH_TYPE.NTLM:
             regExp = "^(.*\\\\.*):(.*?)$"
             errMsg = "HTTP NTLM authentication credentials value must "
             errMsg += "be in format DOMAIN\username:password"
@@ -1077,13 +1135,13 @@ def _setHTTPAuthentication():
 
         _setAuthCred()
 
-        if aTypeLower == "basic":
+        if aTypeLower == AUTH_TYPE.BASIC:
             authHandler = SmartHTTPBasicAuthHandler(kb.passwordMgr)
 
-        elif aTypeLower == "digest":
+        elif aTypeLower == AUTH_TYPE.DIGEST:
             authHandler = urllib2.HTTPDigestAuthHandler(kb.passwordMgr)
 
-        elif aTypeLower == "ntlm":
+        elif aTypeLower == AUTH_TYPE.NTLM:
             try:
                 from ntlm import HTTPNtlmAuthHandler
             except ImportError:
@@ -1143,16 +1201,16 @@ def _setHTTPExtraHeaders():
                 raise SqlmapSyntaxException(errMsg)
 
     elif not conf.httpHeaders or len(conf.httpHeaders) == 1:
-        conf.httpHeaders.append((HTTPHEADER.ACCEPT_LANGUAGE, "en-us,en;q=0.5"))
+        conf.httpHeaders.append((HTTP_HEADER.ACCEPT_LANGUAGE, "en-us,en;q=0.5"))
         if not conf.charset:
-            conf.httpHeaders.append((HTTPHEADER.ACCEPT_CHARSET, "ISO-8859-15,utf-8;q=0.7,*;q=0.7"))
+            conf.httpHeaders.append((HTTP_HEADER.ACCEPT_CHARSET, "ISO-8859-15,utf-8;q=0.7,*;q=0.7"))
         else:
-            conf.httpHeaders.append((HTTPHEADER.ACCEPT_CHARSET, "%s;q=0.7,*;q=0.1" % conf.charset))
+            conf.httpHeaders.append((HTTP_HEADER.ACCEPT_CHARSET, "%s;q=0.7,*;q=0.1" % conf.charset))
 
         # Invalidating any caching mechanism in between
         # Reference: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-        conf.httpHeaders.append((HTTPHEADER.CACHE_CONTROL, "no-cache,no-store"))
-        conf.httpHeaders.append((HTTPHEADER.PRAGMA, "no-cache"))
+        conf.httpHeaders.append((HTTP_HEADER.CACHE_CONTROL, "no-cache,no-store"))
+        conf.httpHeaders.append((HTTP_HEADER.PRAGMA, "no-cache"))
 
 def _defaultHTTPUserAgent():
     """
@@ -1196,24 +1254,24 @@ def _setHTTPUserAgent():
         except:
             item = MOBILES.IPHONE
 
-        conf.httpHeaders.append((HTTPHEADER.USER_AGENT, item[1]))
+        conf.httpHeaders.append((HTTP_HEADER.USER_AGENT, item[1]))
 
     elif conf.agent:
         debugMsg = "setting the HTTP User-Agent header"
         logger.debug(debugMsg)
 
-        conf.httpHeaders.append((HTTPHEADER.USER_AGENT, conf.agent))
+        conf.httpHeaders.append((HTTP_HEADER.USER_AGENT, conf.agent))
 
     elif not conf.randomAgent:
         _ = True
 
         for header, _ in conf.httpHeaders:
-            if header == HTTPHEADER.USER_AGENT:
+            if header == HTTP_HEADER.USER_AGENT:
                 _ = False
                 break
 
         if _:
-            conf.httpHeaders.append((HTTPHEADER.USER_AGENT, _defaultHTTPUserAgent()))
+            conf.httpHeaders.append((HTTP_HEADER.USER_AGENT, _defaultHTTPUserAgent()))
 
     else:
         if not kb.userAgents:
@@ -1228,7 +1286,7 @@ def _setHTTPUserAgent():
                 warnMsg += "file '%s'" % paths.USER_AGENTS
                 logger.warn(warnMsg)
 
-                conf.httpHeaders.append((HTTPHEADER.USER_AGENT, _defaultHTTPUserAgent()))
+                conf.httpHeaders.append((HTTP_HEADER.USER_AGENT, _defaultHTTPUserAgent()))
                 return
 
         count = len(kb.userAgents)
@@ -1239,7 +1297,7 @@ def _setHTTPUserAgent():
             userAgent = kb.userAgents[randomRange(stop=count - 1)]
 
         userAgent = sanitizeStr(userAgent)
-        conf.httpHeaders.append((HTTPHEADER.USER_AGENT, userAgent))
+        conf.httpHeaders.append((HTTP_HEADER.USER_AGENT, userAgent))
 
         infoMsg = "fetched random HTTP User-Agent header from "
         infoMsg += "file '%s': %s" % (paths.USER_AGENTS, userAgent)
@@ -1254,7 +1312,7 @@ def _setHTTPReferer():
         debugMsg = "setting the HTTP Referer header"
         logger.debug(debugMsg)
 
-        conf.httpHeaders.append((HTTPHEADER.REFERER, conf.referer))
+        conf.httpHeaders.append((HTTP_HEADER.REFERER, conf.referer))
 
 def _setHTTPCookies():
     """
@@ -1265,7 +1323,7 @@ def _setHTTPCookies():
         debugMsg = "setting the HTTP Cookie header"
         logger.debug(debugMsg)
 
-        conf.httpHeaders.append((HTTPHEADER.COOKIE, conf.cookie))
+        conf.httpHeaders.append((HTTP_HEADER.COOKIE, conf.cookie))
 
 def _setHTTPTimeout():
     """
@@ -1374,7 +1432,7 @@ def _cleanupOptions():
         if not any([char in conf.testFilter for char in ('.', ')', '(', ']', '[')]):
             conf.testFilter = conf.testFilter.replace('*', '.*')
 
-    if conf.timeSec not in kb.explicitSettings:
+    if "timeSec" not in kb.explicitSettings:
         if conf.tor:
             conf.timeSec = 2 * conf.timeSec
             kb.adjustTimeDelay = ADJUST_TIME_DELAY.DISABLE
@@ -1385,6 +1443,9 @@ def _cleanupOptions():
             logger.warn(warnMsg)
     else:
         kb.adjustTimeDelay = ADJUST_TIME_DELAY.DISABLE
+
+    if conf.retries:
+        conf.retries = min(conf.retries, MAX_CONNECT_RETRIES)
 
     if conf.code:
         conf.code = int(conf.code)
@@ -1519,10 +1580,12 @@ def _setKnowledgeBaseAttributes(flushAll=True):
     kb.dynamicParameter = False
     kb.endDetection = False
     kb.explicitSettings = set()
+    kb.extendTests = None
     kb.errorIsNone = True
     kb.fileReadMode = False
     kb.forcedDbms = None
     kb.headersFp = {}
+    kb.heuristicDbms = None
     kb.heuristicTest = None
     kb.hintValue = None
     kb.htmlFp = []
@@ -1545,12 +1608,6 @@ def _setKnowledgeBaseAttributes(flushAll=True):
     kb.multiThreadMode = False
     kb.negativeLogic = False
     kb.nullConnection = None
-    kb.pageCompress = True
-    kb.pageTemplate = None
-    kb.pageTemplates = dict()
-    kb.postHint = None
-    kb.previousMethod = None
-    kb.processUserMarks = None
     kb.orderByColumns = None
     kb.originalCode = None
     kb.originalPage = None
@@ -1563,16 +1620,22 @@ def _setKnowledgeBaseAttributes(flushAll=True):
     kb.osVersion = None
     kb.osSP = None
 
+    kb.pageCompress = True
+    kb.pageTemplate = None
+    kb.pageTemplates = dict()
     kb.pageEncoding = DEFAULT_PAGE_ENCODING
     kb.pageStable = None
     kb.partRun = None
     kb.permissionFlag = False
+    kb.postHint = None
+    kb.postSpaceToPlus = False
     kb.prependFlag = False
     kb.processResponseCounter = 0
+    kb.previousMethod = None
+    kb.processUserMarks = None
     kb.proxyAuthHeader = None
     kb.queryCounter = 0
     kb.redirectChoice = None
-    kb.redirectSetCookie = None
     kb.reflectiveMechanism = True
     kb.reflectiveCounters = {REFLECTIVE_COUNTER.MISS: 0, REFLECTIVE_COUNTER.HIT: 0}
     kb.requestCounter = 0
@@ -1581,8 +1644,7 @@ def _setKnowledgeBaseAttributes(flushAll=True):
     kb.resumeValues = True
     kb.safeCharEncode = False
     kb.singleLogFlags = set()
-    kb.skipOthersDbms = None
-    kb.postSpaceToPlus = False
+    kb.reduceTests = None
     kb.stickyDBMS = False
     kb.stickyLevel = None
     kb.suppressResumeInfo = False
@@ -1606,6 +1668,7 @@ def _setKnowledgeBaseAttributes(flushAll=True):
         kb.userAgents = None
         kb.vainRun = True
         kb.vulnHosts = set()
+        kb.wafFunctions = []
         kb.wordlists = None
 
 def _useWizardInterface():
@@ -1791,33 +1854,6 @@ def _mergeOptions(inputOptions, overrideOptions):
         if hasattr(conf, key) and conf[key] is None:
             conf[key] = value
 
-# Logger recorder object, which keeps the log structure
-class LogRecorder(logging.StreamHandler):
-    """
-    Logging handler class which only records CUSTOM_LOGGING.PAYLOAD entries
-    to a global list.
-    """
-    loghist = []
-
-    def emit(self, record):
-        """
-        Simply record the emitted events.
-        """
-        self.loghist.append({'levelname': record.levelname,
-                             'text': record.msg % record.args if record.args else record.msg,
-                             'id': len(self.loghist) + 1})
-
-        if conf.fdLog:
-            # TODO: this is very heavy operation and slows down a lot the
-            # whole execution of the sqlmap engine, find an alternative
-            os.write(conf.fdLog, base64pickle(self.loghist))
-
-def _setRestAPILog():
-    if hasattr(conf, "fdLog") and conf.fdLog:
-        logger.removeHandler(LOGGER_HANDLER)
-        LOGGER_RECORDER = LogRecorder()
-        logger.addHandler(LOGGER_RECORDER)
-
 def _setTrafficOutputFP():
     if conf.trafficFile:
         infoMsg = "setting file for logging HTTP traffic"
@@ -1892,9 +1928,8 @@ def _setTorHttpProxySettings():
 
     if not conf.checkTor:
         warnMsg = "use switch '--check-tor' at "
-        warnMsg += "your own convenience when using "
-        warnMsg += "HTTP proxy type (option '--tor-type') "
-        warnMsg += "for accessing Tor anonymizing network because of "
+        warnMsg += "your own convenience when accessing "
+        warnMsg += "Tor anonymizing network because of "
         warnMsg += "known issues with default settings of various 'bundles' "
         warnMsg += "(e.g. Vidalia)"
         logger.warn(warnMsg)
@@ -1971,6 +2006,10 @@ def _basicOptionValidation():
 
     if conf.notString and conf.nullConnection:
         errMsg = "option '--not-string' is incompatible with switch '--null-connection'"
+        raise SqlmapSyntaxException(errMsg)
+
+    if conf.noCast and conf.hexConvert:
+        errMsg = "switch '--no-cast' is incompatible with switch '--hex'"
         raise SqlmapSyntaxException(errMsg)
 
     if conf.string and conf.notString:
@@ -2075,21 +2114,22 @@ def _resolveCrossReferences():
     lib.core.common.getPageTemplate = getPageTemplate
     lib.core.convert.singleTimeWarnMessage = singleTimeWarnMessage
 
-def init(inputOptions=AttribDict(), overrideOptions=False):
-    """
-    Set attributes into both configuration and knowledge base singletons
-    based upon command line and configuration file options.
-    """
-
+def initOptions(inputOptions=AttribDict(), overrideOptions=False):
     if not inputOptions.disableColoring:
         coloramainit()
 
     _setConfAttributes()
     _setKnowledgeBaseAttributes()
     _mergeOptions(inputOptions, overrideOptions)
+
+def init():
+    """
+    Set attributes into both configuration and knowledge base singletons
+    based upon command line and configuration file options.
+    """
+
     _useWizardInterface()
     setVerbosity()
-    _setRestAPILog()
     _saveCmdline()
     _setRequestFromFile()
     _cleanupOptions()
@@ -2101,6 +2141,7 @@ def init(inputOptions=AttribDict(), overrideOptions=False):
     _adjustLoggingFormatter()
     _setMultipleTargets()
     _setTamperingFunctions()
+    _setWafFunctions()
     _setTrafficOutputFP()
     _resolveCrossReferences()
 

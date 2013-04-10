@@ -18,6 +18,7 @@ from lib.controller.checks import checkConnection
 from lib.controller.checks import checkNullConnection
 from lib.controller.checks import checkWaf
 from lib.controller.checks import heuristicCheckSqlInjection
+from lib.controller.checks import identifyWaf
 from lib.core.agent import agent
 from lib.core.common import extractRegexResult
 from lib.core.common import getFilteredPageContent
@@ -36,6 +37,7 @@ from lib.core.common import urldecode
 from lib.core.data import conf
 from lib.core.data import kb
 from lib.core.data import logger
+from lib.core.enums import CONTENT_TYPE
 from lib.core.enums import HASHDB_KEYS
 from lib.core.enums import HEURISTIC_TEST
 from lib.core.enums import HTTPMETHOD
@@ -142,7 +144,7 @@ def _formatInjection(inj):
             vector = "%s%s" % (vector, comment)
         data += "    Type: %s\n" % PAYLOAD.SQLINJECTION[stype]
         data += "    Title: %s\n" % title
-        data += "    Payload: %s\n" % payload
+        data += "    Payload: %s\n" % urldecode(payload, unsafe="&")
         data += "    Vector: %s\n\n" % vector if conf.verbose > 1 else "\n"
 
     return data
@@ -151,9 +153,11 @@ def _showInjections():
     header = "sqlmap identified the following injection points with "
     header += "a total of %d HTTP(s) requests" % kb.testQueryCount
 
-    data = "".join(set(map(lambda x: _formatInjection(x), kb.injections))).rstrip("\n")
-
-    conf.dumper.string(header, data)
+    if hasattr(conf, "api"):
+        conf.dumper.string("", kb.injections, content_type=CONTENT_TYPE.TECHNIQUES)
+    else:
+        data = "".join(set(map(lambda x: _formatInjection(x), kb.injections))).rstrip("\n")
+        conf.dumper.string(header, data)
 
     if conf.tamper:
         warnMsg = "changes made by tampering scripts are not "
@@ -249,7 +253,7 @@ def start():
 
     if conf.configFile and not kb.targets:
         errMsg = "you did not edit the configuration file properly, set "
-        errMsg += "the target url, list of targets or google dork"
+        errMsg += "the target URL, list of targets or google dork"
         logger.error(errMsg)
         return False
 
@@ -272,7 +276,7 @@ def start():
             testSqlInj = False
 
             if PLACE.GET in conf.parameters and not any([conf.data, conf.testParameter]):
-                for parameter in re.findall(r"([^=]+)=([^%s]+%s?|\Z)" % (conf.pDel or ";", conf.pDel or ";"), conf.parameters[PLACE.GET]):
+                for parameter in re.findall(r"([^=]+)=([^%s]+%s?|\Z)" % (conf.pDel or DEFAULT_GET_POST_DELIMITER, conf.pDel or DEFAULT_GET_POST_DELIMITER), conf.parameters[PLACE.GET]):
                     paramKey = (conf.hostname, conf.path, PLACE.GET, parameter[0])
 
                     if paramKey not in kb.testedParams:
@@ -283,7 +287,6 @@ def start():
                 if paramKey not in kb.testedParams:
                     testSqlInj = True
 
-            testSqlInj &= (conf.hostname, conf.path, None, None) not in kb.testedParams
             testSqlInj &= conf.hostname not in kb.vulnHosts
 
             if not testSqlInj:
@@ -297,7 +300,7 @@ def start():
                 if conf.forms:
                     message = "[#%d] form:\n%s %s" % (hostCount, conf.method or HTTPMETHOD.GET, targetUrl)
                 else:
-                    message = "url %d:\n%s %s%s" % (hostCount, conf.method or HTTPMETHOD.GET, targetUrl, " (PageRank: %s)" % get_pagerank(targetUrl) if conf.googleDork and conf.pageRank else "")
+                    message = "URL %d:\n%s %s%s" % (hostCount, conf.method or HTTPMETHOD.GET, targetUrl, " (PageRank: %s)" % get_pagerank(targetUrl) if conf.googleDork and conf.pageRank else "")
 
                 if conf.cookie:
                     message += "\nCookie: %s" % conf.cookie
@@ -336,7 +339,7 @@ def start():
                         break
 
                 else:
-                    message += "\ndo you want to test this url? [Y/n/q]"
+                    message += "\ndo you want to test this URL? [Y/n/q]"
                     test = readInput(message, default="Y")
 
                     if not test or test[0] in ("y", "Y"):
@@ -346,7 +349,7 @@ def start():
                     elif test[0] in ("q", "Q"):
                         break
 
-                    infoMsg = "testing url '%s'" % targetUrl
+                    infoMsg = "testing URL '%s'" % targetUrl
                     logger.info(infoMsg)
 
             setupTargetEnv()
@@ -356,6 +359,9 @@ def start():
 
             if conf.checkWaf:
                 checkWaf()
+
+            if conf.identifyWaf:
+                identifyWaf()
 
             if conf.nullConnection:
                 checkNullConnection()
@@ -595,7 +601,7 @@ def start():
             e = getUnicode(e)
 
             if conf.multipleTargets:
-                e += ", skipping to the next %s" % ("form" if conf.forms else "url")
+                e += ", skipping to the next %s" % ("form" if conf.forms else "URL")
                 logger.error(e)
             else:
                 logger.critical(e)

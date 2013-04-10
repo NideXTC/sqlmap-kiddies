@@ -12,6 +12,7 @@ from lib.core.data import conf
 from lib.core.data import kb
 from lib.core.data import logger
 from lib.core.data import paths
+from lib.core.enums import CONTENT_TYPE
 from lib.core.exception import SqlmapNoneDataException
 from lib.core.exception import SqlmapUnsupportedDBMSException
 from lib.core.settings import SUPPORTED_DBMS
@@ -21,7 +22,7 @@ from lib.techniques.brute.use import tableExists
 def action():
     """
     This function exploit the SQL injection on the affected
-    url parameter and extract requested data from the
+    URL parameter and extract requested data from the
     back-end database management system or operating system
     if possible
     """
@@ -77,7 +78,7 @@ def action():
     if conf.getPasswordHashes:
         try:
             conf.dumper.userSettings("database management system users password hashes",
-                                    conf.dbmsHandler.getPasswordHashes(), "password hash")
+                                    conf.dbmsHandler.getPasswordHashes(), "password hash", CONTENT_TYPE.PASSWORDS)
         except SqlmapNoneDataException, ex:
             logger.critical(ex)
         except:
@@ -86,7 +87,7 @@ def action():
     if conf.getPrivileges:
         try:
             conf.dumper.userSettings("database management system users privileges",
-                                    conf.dbmsHandler.getPrivileges(), "privilege")
+                                    conf.dbmsHandler.getPrivileges(), "privilege", CONTENT_TYPE.PRIVILEGES)
         except SqlmapNoneDataException, ex:
             logger.critical(ex)
         except:
@@ -95,7 +96,7 @@ def action():
     if conf.getRoles:
         try:
             conf.dumper.userSettings("database management system users roles",
-                                    conf.dbmsHandler.getRoles(), "role")
+                                    conf.dbmsHandler.getRoles(), "role", CONTENT_TYPE.ROLES)
         except SqlmapNoneDataException, ex:
             logger.critical(ex)
         except:
@@ -111,10 +112,10 @@ def action():
         conf.dumper.dbTables(tableExists(paths.COMMON_TABLES))
 
     if conf.getSchema:
-        conf.dumper.dbTableColumns(conf.dbmsHandler.getSchema())
+        conf.dumper.dbTableColumns(conf.dbmsHandler.getSchema(), CONTENT_TYPE.SCHEMA)
 
     if conf.getColumns:
-        conf.dumper.dbTableColumns(conf.dbmsHandler.getColumns())
+        conf.dumper.dbTableColumns(conf.dbmsHandler.getColumns(), CONTENT_TYPE.COLUMNS)
 
     if conf.getCount:
         conf.dumper.dbTablesCount(conf.dbmsHandler.getCount())

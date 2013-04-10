@@ -9,12 +9,11 @@ from extra.safe2bin.safe2bin import safechardecode
 from lib.core.common import dataToStdout
 from lib.core.common import Backend
 from lib.core.common import getSQLSnippet
-from lib.core.common import isTechniqueAvailable
+from lib.core.common import isStackingAvailable
 from lib.core.common import readInput
 from lib.core.data import conf
 from lib.core.data import logger
 from lib.core.enums import DBMS
-from lib.core.enums import PAYLOAD
 from lib.core.exception import SqlmapFilePathException
 from lib.core.exception import SqlmapUnsupportedFeatureException
 from lib.core.shell import autoCompletion
@@ -39,7 +38,7 @@ class Abstraction(Web, UDF, Xp_cmdshell):
         Xp_cmdshell.__init__(self)
 
     def execCmd(self, cmd, silent=False):
-        if self.webBackdoorUrl and not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED):
+        if self.webBackdoorUrl and not isStackingAvailable():
             self.webBackdoorRunCmd(cmd)
 
         elif Backend.getIdentifiedDbms() in (DBMS.MYSQL, DBMS.PGSQL):
@@ -55,7 +54,7 @@ class Abstraction(Web, UDF, Xp_cmdshell):
     def evalCmd(self, cmd, first=None, last=None):
         retVal = None
 
-        if self.webBackdoorUrl and not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED):
+        if self.webBackdoorUrl and not isStackingAvailable():
             retVal = self.webBackdoorRunCmd(cmd)
 
         elif Backend.getIdentifiedDbms() in (DBMS.MYSQL, DBMS.PGSQL):
@@ -92,7 +91,7 @@ class Abstraction(Web, UDF, Xp_cmdshell):
             self.execCmd(cmd)
 
     def shell(self):
-        if self.webBackdoorUrl and not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED):
+        if self.webBackdoorUrl and not isStackingAvailable():
             infoMsg = "calling OS shell. To quit type "
             infoMsg += "'x' or 'q' and press ENTER"
             logger.info(infoMsg)
@@ -146,7 +145,7 @@ class Abstraction(Web, UDF, Xp_cmdshell):
         if not conf.dbmsCred:
             return
 
-        if not conf.direct and not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED):
+        if not conf.direct and not isStackingAvailable():
             errMsg = "stacked queries is not supported hence sqlmap cannot "
             errMsg += "execute statements as another user. The execution "
             errMsg += "will continue and the DBMS credentials provided "
@@ -172,10 +171,10 @@ class Abstraction(Web, UDF, Xp_cmdshell):
         #    expression = getSQLSnippet(DBMS.PGSQL, "configure_dblink", ENABLE="1")
         #    inject.goStacked(expression)
 
-    def initEnv(self, mandatory=True, detailed=False, web=False):
+    def initEnv(self, mandatory=True, detailed=False, web=False, forceInit=False):
         self._initRunAs()
 
-        if self.envInitialized:
+        if self.envInitialized and not forceInit:
             return
 
         if web:

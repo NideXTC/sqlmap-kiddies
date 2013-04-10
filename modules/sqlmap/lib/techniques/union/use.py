@@ -19,6 +19,7 @@ from lib.core.common import dataToStdout
 from lib.core.common import extractRegexResult
 from lib.core.common import flattenValue
 from lib.core.common import getConsoleWidth
+from lib.core.common import getPartRun
 from lib.core.common import getUnicode
 from lib.core.common import hashDBRetrieve
 from lib.core.common import hashDBWrite
@@ -33,7 +34,7 @@ from lib.core.common import removeReflectiveValues
 from lib.core.common import singleTimeDebugMessage
 from lib.core.common import singleTimeWarnMessage
 from lib.core.common import unArrayizeValue
-from lib.core.common import wasLastRequestDBMSError
+from lib.core.common import wasLastResponseDBMSError
 from lib.core.convert import htmlunescape
 from lib.core.data import conf
 from lib.core.data import kb
@@ -94,7 +95,7 @@ def _oneShotUnionUse(expression, unpack=True, limited=False):
             retVal = getUnicode(retVal, kb.pageEncoding)
 
             # Special case when DBMS is Microsoft SQL Server and error message is used as a result of union injection
-            if Backend.isDbms(DBMS.MSSQL) and wasLastRequestDBMSError():
+            if Backend.isDbms(DBMS.MSSQL) and wasLastResponseDBMSError():
                 retVal = htmlunescape(retVal).replace("<br>", "\n")
 
             hashDBWrite("%s%s" % (conf.hexConvert, expression), retVal)
@@ -145,8 +146,8 @@ def configUnion(char=None, columns=None):
 def unionUse(expression, unpack=True, dump=False):
     """
     This function tests for an union SQL injection on the target
-    url then call its subsidiary function to effectively perform an
-    union SQL injection on the affected url
+    URL then call its subsidiary function to effectively perform an
+    union SQL injection on the affected URL
     """
 
     initTechnique(PAYLOAD.TECHNIQUE.UNION)
@@ -162,6 +163,9 @@ def unionUse(expression, unpack=True, dump=False):
     start = time.time()
 
     _, _, _, _, _, expressionFieldsList, expressionFields, _ = agent.getFields(origExpr)
+
+    # Set kb.partRun in case the engine is called from the API
+    kb.partRun = getPartRun(alias=False) if hasattr(conf, "api") else None
 
     if expressionFieldsList and len(expressionFieldsList) > 1 and "ORDER BY" in expression.upper():
         # Removed ORDER BY clause because UNION does not play well with it
@@ -315,7 +319,8 @@ def unionUse(expression, unpack=True, dump=False):
                 kb.suppressResumeInfo = False
 
     if not value and not abortedFlag:
-        value = _oneShotUnionUse(expression, unpack)
+        output = _oneShotUnionUse(expression, unpack)
+        value = parseUnionPage(output)
 
     duration = calculateDeltaSeconds(start)
 

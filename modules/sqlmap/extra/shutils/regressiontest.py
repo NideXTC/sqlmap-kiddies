@@ -4,21 +4,23 @@
 # See the file 'doc/COPYING' for copying permission
 
 import codecs
+import inspect
 import os
 import re
 import smtplib
 import subprocess
 import sys
 import time
+import traceback
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-sys.path.append("../../")
+sys.path.append(os.path.normpath("%s/../../" % os.path.dirname(inspect.getfile(inspect.currentframe()))))
 
 from lib.core.revision import getRevisionNumber
 
-TIME = time.strftime("%H:%M:%S %d-%m-%Y", time.gmtime())
+START_TIME = time.strftime("%H:%M:%S %d-%m-%Y", time.gmtime())
 SQLMAP_HOME = "/opt/sqlmap"
 REVISION = getRevisionNumber()
 
@@ -28,7 +30,7 @@ SMTP_TIMEOUT = 30
 FROM = "regressiontest@sqlmap.org"
 #TO = "dev@sqlmap.org"
 TO = ["bernardo.damele@gmail.com", "miroslav.stampar@gmail.com"]
-SUBJECT = "Regression test on %s using revision %s" % (TIME, REVISION)
+SUBJECT = "regression test started on %s using revision %s" % (START_TIME, REVISION)
 
 def prepare_email(content):
     global FROM
@@ -57,6 +59,11 @@ def send_email(msg):
     except smtplib.SMTPException, e:
         print "Failure to send email: %s" % str(e)
 
+def failure_email(msg):
+    msg = prepare_email(msg)
+    send_email(msg)
+    sys.exit(1)
+
 def main():
     global SUBJECT
 
@@ -64,16 +71,17 @@ def main():
     test_counts = []
     attachments = {}
 
-    command_line = "cd %s && python sqlmap.py --live-test" % SQLMAP_HOME
-    proc = subprocess.Popen(command_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    proc.wait()
-    stdout, stderr = proc.communicate()
+    updateproc = subprocess.Popen("cd /opt/sqlmap/ ; python /opt/sqlmap/sqlmap.py --update", shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = updateproc.communicate()
 
     if stderr:
-        msg = prepare_email("Execution of regression test failed with error:\n\n%s" % stderr)
-        send_email(msg)
-        sys.exit(1)
+        failure_email("Update of sqlmap failed with error:\n\n%s" % stderr)
+
+    regressionproc = subprocess.Popen("python /opt/sqlmap/sqlmap.py --live-test", shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
+    stdout, stderr = regressionproc.communicate()
+
+    if stderr:
+        failure_email("Execution of regression test failed with error:\n\n%s" % stderr)
 
     failed_tests = re.findall("running live test case: (.+?) \((\d+)\/\d+\)[\r]*\n.+test failed (at parsing item \"(.+)\" )?\- scan folder: (\/.+) \- traceback: (.*?)( - SQL injection not detected)?[\r]*\n", stdout, re.M)
 
@@ -124,9 +132,11 @@ def main():
 
         content += "#######################################################################\n\n"
 
+    end_string = "Regression test finished at %s" % time.strftime("%H:%M:%S %d-%m-%Y", time.gmtime())
+
     if content:
-        content += "Regression test finished at %s" % time.strftime("%H:%M:%S %d-%m-%Y", time.gmtime())
-        SUBJECT += " (%s)" % ", ".join("#%d" % count for count in test_counts)
+        content += end_string
+        SUBJECT = "Failed %s (%s)" % (SUBJECT, ", ".join("#%d" % count for count in test_counts))
 
         msg = prepare_email(content)
 
@@ -136,6 +146,19 @@ def main():
             msg.attach(attachment)
 
         send_email(msg)
+    else:
+        SUBJECT = "Successful %s" % SUBJECT
+        msg = prepare_email("All test cases were successful\n\n%s" % end_string)
+        send_email(msg)
 
 if __name__ == "__main__":
-    main()
+    log_fd = open("/tmp/sqlmapregressiontest.log", "wb")
+    log_fd.write("Regression test started at %s\n" % START_TIME)
+
+    try:
+        main()
+    except Exception, e:
+        log_fd.write("An exception has occurred:\n%s" % str(traceback.format_exc()))
+
+    log_fd.write("Regression test finished at %s\n\n" % time.strftime("%H:%M:%S %d-%m-%Y", time.gmtime()))
+    log_fd.close()

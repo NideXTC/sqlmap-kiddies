@@ -6,6 +6,7 @@ See the file 'doc/COPYING' for copying permission
 """
 
 from lib.core.enums import DBMS
+from lib.core.enums import OS
 from lib.core.enums import POST_HINT
 from lib.core.settings import BLANK
 from lib.core.settings import NULL
@@ -205,9 +206,16 @@ POST_HINT_CONTENT_TYPES = {
 DEPRECATED_OPTIONS = {
                         "--replicate": "use '--dump-format=SQLITE' instead",
                         "--no-unescape": "use '--no-escape' instead",
+                        "--binary": "use '--binary-fields' instead",
+                        "--check-payload": None,
                      }
 
 DUMP_DATA_PREPROCESS = {
                             DBMS.ORACLE: {"XMLTYPE": "(%s).getStringVal()"},  # Reference: https://www.tibcommunity.com/docs/DOC-3643
                             DBMS.MSSQL: {"IMAGE": "CONVERT(VARBINARY(MAX),%s)"},
                        }
+
+DEFAULT_DOC_ROOTS = {
+                        OS.WINDOWS: ("C:/xampp/htdocs/", "C:/Inetpub/wwwroot/"),
+                        OS.LINUX: ("/var/www/",)
+                    }

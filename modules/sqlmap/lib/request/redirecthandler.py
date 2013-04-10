@@ -15,10 +15,11 @@ from lib.core.common import getUnicode
 from lib.core.common import logHTTPTraffic
 from lib.core.common import readInput
 from lib.core.enums import CUSTOM_LOGGING
-from lib.core.enums import HTTPHEADER
+from lib.core.enums import HTTP_HEADER
 from lib.core.enums import HTTPMETHOD
 from lib.core.enums import REDIRECTION
 from lib.core.exception import SqlmapConnectionException
+from lib.core.settings import DEFAULT_COOKIE_DELIMITER
 from lib.core.settings import MAX_CONNECTION_CHUNK_SIZE
 from lib.core.settings import MAX_CONNECTION_TOTAL_SIZE
 from lib.core.settings import MAX_SINGLE_URL_REDIRECTIONS
@@ -81,7 +82,7 @@ class SmartRedirectHandler(urllib2.HTTPRedirectHandler):
                 except:
                     pass
 
-        content = decodePage(content, headers.get(HTTPHEADER.CONTENT_ENCODING), headers.get(HTTPHEADER.CONTENT_TYPE))
+        content = decodePage(content, headers.get(HTTP_HEADER.CONTENT_ENCODING), headers.get(HTTP_HEADER.CONTENT_TYPE))
 
         threadData = getCurrentThreadData()
         threadData.lastRedirectMsg = (threadData.lastRequestUID, content)
@@ -90,13 +91,13 @@ class SmartRedirectHandler(urllib2.HTTPRedirectHandler):
         redirectMsg += "[#%d] (%d %s):\n" % (threadData.lastRequestUID, code, getUnicode(msg))
 
         if headers:
-            logHeaders = "\n".join("%s: %s" % (key.capitalize() if isinstance(key, basestring) else key, getUnicode(value)) for (key, value) in headers.items())
+            logHeaders = "\n".join("%s: %s" % (getUnicode(key.capitalize() if isinstance(key, basestring) else key), getUnicode(value)) for (key, value) in headers.items())
         else:
             logHeaders = ""
 
         redirectMsg += logHeaders
         if content:
-            redirectMsg += "\n\n%s" % content[:MAX_CONNECTION_CHUNK_SIZE]
+            redirectMsg += "\n\n%s" % getUnicode(content[:MAX_CONNECTION_CHUNK_SIZE])
 
         logHTTPTraffic(threadData.lastRequestMsg, redirectMsg)
         logger.log(CUSTOM_LOGGING.TRAFFIC_IN, redirectMsg)
@@ -109,13 +110,12 @@ class SmartRedirectHandler(urllib2.HTTPRedirectHandler):
             self._ask_redirect_choice(code, redurl, req.get_method())
 
         if redurl and kb.redirectChoice == REDIRECTION.YES:
-            req.headers[HTTPHEADER.HOST] = getHostHeader(redurl)
+            req.headers[HTTP_HEADER.HOST] = getHostHeader(redurl)
+            if headers and HTTP_HEADER.SET_COOKIE in headers:
+                req.headers[HTTP_HEADER.COOKIE] = headers[HTTP_HEADER.SET_COOKIE].split(DEFAULT_COOKIE_DELIMITER)[0]
             result = urllib2.HTTPRedirectHandler.http_error_302(self, req, fp, code, msg, headers)
         else:
             result = fp
-
-        if HTTPHEADER.SET_COOKIE in headers:
-            kb.redirectSetCookie = headers.get(HTTPHEADER.SET_COOKIE).split("; path")[0]
 
         result.redcode = code
         result.redurl = redurl

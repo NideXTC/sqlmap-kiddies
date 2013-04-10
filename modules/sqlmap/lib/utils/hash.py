@@ -21,6 +21,7 @@ except (ImportError, OSError):
 else:
     _multiprocessing = multiprocessing
 
+import gc
 import os
 import re
 import tempfile
@@ -28,6 +29,9 @@ import time
 
 from hashlib import md5
 from hashlib import sha1
+from hashlib import sha224
+from hashlib import sha384
+from hashlib import sha512
 from Queue import Queue
 
 from lib.core.common import Backend
@@ -216,6 +220,35 @@ def sha1_generic_passwd(password, uppercase=False):
 
     return retVal.upper() if uppercase else retVal.lower()
 
+def sha224_generic_passwd(password, uppercase=False):
+    """
+    >>> sha224_generic_passwd(password='testpass', uppercase=False)
+    '648db6019764b598f75ab6b7616d2e82563a00eb1531680e19ac4c6f'
+    """
+
+    retVal = sha224(password).hexdigest()
+
+    return retVal.upper() if uppercase else retVal.lower()
+
+def sha384_generic_passwd(password, uppercase=False):
+    """
+    >>> sha384_generic_passwd(password='testpass', uppercase=False)
+    '6823546e56adf46849343be991d4b1be9b432e42ed1b4bb90635a0e4b930e49b9ca007bc3e04bf0a4e0df6f1f82769bf'
+    """
+
+    retVal = sha384(password).hexdigest()
+
+    return retVal.upper() if uppercase else retVal.lower()
+
+def sha512_generic_passwd(password, uppercase=False):
+    """
+    >>> sha512_generic_passwd(password='testpass', uppercase=False)
+    '78ddc8555bb1677ff5af75ba5fc02cb30bb592b0610277ae15055e189b77fe3fda496e5027a3d99ec85d54941adee1cc174b50438fdc21d82d0a79f85b58cf44'
+    """
+
+    retVal = sha512(password).hexdigest()
+
+    return retVal.upper() if uppercase else retVal.lower()
 
 def crypt_generic_passwd(password, salt, uppercase=False):
     """
@@ -297,6 +330,9 @@ __functions__ = {
                     HASH.ORACLE_OLD: oracle_old_passwd,
                     HASH.MD5_GENERIC: md5_generic_passwd,
                     HASH.SHA1_GENERIC: sha1_generic_passwd,
+                    HASH.SHA224_GENERIC: sha224_generic_passwd,
+                    HASH.SHA384_GENERIC: sha384_generic_passwd,
+                    HASH.SHA512_GENERIC: sha512_generic_passwd,
                     HASH.CRYPT_GENERIC: crypt_generic_passwd,
                     HASH.WORDPRESS: wordpress_passwd,
                 }
@@ -305,41 +341,43 @@ def storeHashesToFile(attack_dict):
     if not attack_dict:
         return
 
-    handle, filename = tempfile.mkstemp(suffix=".txt")
+    handle, filename = tempfile.mkstemp(prefix="sqlmaphashes-", suffix=".txt")
     os.close(handle)
 
-    warnMsg = "writing hashes to file '%s' " % filename
-    warnMsg += "for eventual further processing with other tools"
-    logger.warn(warnMsg)
+    infoMsg = "writing hashes to file '%s' " % filename
+    infoMsg += "for eventual further processing with other tools"
+    logger.info(infoMsg)
 
     items = set()
 
     with open(filename, "w+") as f:
         for user, hashes in attack_dict.items():
             for hash_ in hashes:
-                if not hash_ or hash_ == NULL or not hashRecognition(hash_):
-                    continue
+                hash_ = hash_.split()[0] if hash_ else hash_
+                if hash_ and hash_ != NULL and hashRecognition(hash_):
+                    item = None
+                    if user and not user.startswith(DUMMY_USER_PREFIX):
+                        item = "%s:%s\n" % (user.encode(UNICODE_ENCODING), hash_.encode(UNICODE_ENCODING))
+                    else:
+                        item = "%s\n" % hash_.encode(UNICODE_ENCODING)
 
-                item = None
-                if user and not user.startswith(DUMMY_USER_PREFIX):
-                    item = "%s:%s\n" % (user.encode(UNICODE_ENCODING), hash_.encode(UNICODE_ENCODING))
-                else:
-                    item = "%s\n" % hash_.encode(UNICODE_ENCODING)
-
-                if item and item not in items:
-                    f.write(item)
-                    items.add(item)
+                    if item and item not in items:
+                        f.write(item)
+                        items.add(item)
 
 def attackCachedUsersPasswords():
     if kb.data.cachedUsersPasswords:
         results = dictionaryAttack(kb.data.cachedUsersPasswords)
 
+        lut = {}
         for (_, hash_, password) in results:
-            for user in kb.data.cachedUsersPasswords.keys():
-                for i in xrange(len(kb.data.cachedUsersPasswords[user])):
-                    if kb.data.cachedUsersPasswords[user][i] and hash_.lower() in kb.data.cachedUsersPasswords[user][i].lower()\
-                    and 'clear-text password' not in kb.data.cachedUsersPasswords[user][i].lower():
-                        kb.data.cachedUsersPasswords[user][i] += "%s    clear-text password: %s" % ('\n' if kb.data.cachedUsersPasswords[user][i][-1] != '\n' else '', password)
+            lut[hash_.lower()] = password
+
+        for user in kb.data.cachedUsersPasswords.keys():
+            for i in xrange(len(kb.data.cachedUsersPasswords[user])):
+                value = kb.data.cachedUsersPasswords[user][i].lower().split()[0]
+                if value in lut:
+                    kb.data.cachedUsersPasswords[user][i] += "%s    clear-text password: %s" % ('\n' if kb.data.cachedUsersPasswords[user][i][-1] != '\n' else '', lut[value])
 
 def attackDumpedTable():
     if kb.data.dumpedTable:
@@ -489,10 +527,14 @@ def _bruteProcessVariantA(attack_info, hash_regex, suffix, retVal, proc_id, proc
 
                 elif (proc_id == 0 or getattr(proc_count, "value", 0) == 1) and count % HASH_MOD_ITEM_DISPLAY == 0 or hash_regex == HASH.ORACLE_OLD or hash_regex == HASH.CRYPT_GENERIC and IS_WIN:
                     rotator += 1
+
                     if rotator >= len(ROTATING_CHARS):
                         rotator = 0
+
                     status = 'current status: %s... %s' % (word.ljust(5)[:5], ROTATING_CHARS[rotator])
-                    dataToStdout("\r[%s] [INFO] %s" % (time.strftime("%X"), status))
+
+                    if not hasattr(conf, "api"):
+                        dataToStdout("\r[%s] [INFO] %s" % (time.strftime("%X"), status))
 
             except KeyboardInterrupt:
                 raise
@@ -500,8 +542,8 @@ def _bruteProcessVariantA(attack_info, hash_regex, suffix, retVal, proc_id, proc
             except (UnicodeEncodeError, UnicodeDecodeError):
                 pass  # ignore possible encoding problems caused by some words in custom dictionaries
 
-            except:
-                warnMsg = "there was a problem while hashing entry: %s. " % repr(word)
+            except Exception, e:
+                warnMsg = "there was a problem while hashing entry: %s (%s). " % (repr(word), e)
                 warnMsg += "Please report by e-mail to %s" % ML
                 logger.critical(warnMsg)
 
@@ -509,8 +551,9 @@ def _bruteProcessVariantA(attack_info, hash_regex, suffix, retVal, proc_id, proc
         pass
 
     finally:
-        if hasattr(proc_count, 'value'):
-            proc_count.value -= 1
+        if hasattr(proc_count, "value"):
+            with proc_count.get_lock():
+                proc_count.value -= 1
 
 def _bruteProcessVariantB(user, hash_, kwargs, hash_regex, suffix, retVal, found, proc_id, proc_count, wordlists, custom_wordlist):
     count = 0
@@ -557,9 +600,12 @@ def _bruteProcessVariantB(user, hash_, kwargs, hash_regex, suffix, retVal, found
                     if rotator >= len(ROTATING_CHARS):
                         rotator = 0
                     status = 'current status: %s... %s' % (word.ljust(5)[:5], ROTATING_CHARS[rotator])
+
                     if not user.startswith(DUMMY_USER_PREFIX):
                         status += ' (user: %s)' % user
-                    dataToStdout("\r[%s] [INFO] %s" % (time.strftime("%X"), status))
+
+                    if not hasattr(conf, "api"):
+                        dataToStdout("\r[%s] [INFO] %s" % (time.strftime("%X"), status))
 
             except KeyboardInterrupt:
                 raise
@@ -576,8 +622,9 @@ def _bruteProcessVariantB(user, hash_, kwargs, hash_regex, suffix, retVal, found
         pass
 
     finally:
-        if hasattr(proc_count, 'value'):
-            proc_count.value -= 1
+        if hasattr(proc_count, "value"):
+            with proc_count.get_lock():
+                proc_count.value -= 1
 
 def dictionaryAttack(attack_dict):
     suffix_list = [""]
@@ -721,6 +768,8 @@ def dictionaryAttack(attack_dict):
                             infoMsg = "starting %d processes " % _multiprocessing.cpu_count()
                             singleTimeLogMessage(infoMsg)
 
+                        gc.disable()
+
                         retVal = _multiprocessing.Queue()
                         count = _multiprocessing.Value('i', _multiprocessing.cpu_count())
 
@@ -729,10 +778,11 @@ def dictionaryAttack(attack_dict):
                             processes.append(p)
 
                         for p in processes:
+                            p.daemon = True
                             p.start()
 
-                        for p in processes:
-                            p.join()
+                        while count.value > 0:
+                            time.sleep(0.5)
 
                     else:
                         warnMsg = "multiprocessing hash cracking is currently "
@@ -756,6 +806,9 @@ def dictionaryAttack(attack_dict):
                             pass
 
                 finally:
+                    if _multiprocessing:
+                        gc.enable()
+
                     if retVal:
                         conf.hashDB.beginTransaction()
 
@@ -798,6 +851,8 @@ def dictionaryAttack(attack_dict):
                                 infoMsg = "starting %d processes " % _multiprocessing.cpu_count()
                                 singleTimeLogMessage(infoMsg)
 
+                            gc.disable()
+
                             retVal = _multiprocessing.Queue()
                             found_ = _multiprocessing.Value('i', False)
                             count = _multiprocessing.Value('i', _multiprocessing.cpu_count())
@@ -807,10 +862,11 @@ def dictionaryAttack(attack_dict):
                                 processes.append(p)
 
                             for p in processes:
+                                p.daemon = True
                                 p.start()
 
-                            for p in processes:
-                                p.join()
+                            while count.value > 0:
+                                time.sleep(0.5)
 
                             found = found_.value != 0
 
@@ -844,6 +900,9 @@ def dictionaryAttack(attack_dict):
                                 pass
 
                     finally:
+                        if _multiprocessing:
+                            gc.enable()
+
                         if retVal:
                             conf.hashDB.beginTransaction()
 

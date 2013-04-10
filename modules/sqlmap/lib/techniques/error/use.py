@@ -16,6 +16,7 @@ from lib.core.common import calculateDeltaSeconds
 from lib.core.common import dataToStdout
 from lib.core.common import decodeHexValue
 from lib.core.common import extractRegexResult
+from lib.core.common import getPartRun
 from lib.core.common import getUnicode
 from lib.core.common import hashDBRetrieve
 from lib.core.common import hashDBWrite
@@ -34,7 +35,6 @@ from lib.core.data import logger
 from lib.core.data import queries
 from lib.core.dicts import FROM_DUMMY_TABLE
 from lib.core.enums import DBMS
-from lib.core.enums import PAYLOAD
 from lib.core.settings import CHECK_ZERO_COLUMNS_THRESHOLD
 from lib.core.settings import MYSQL_ERROR_CHUNK_LENGTH
 from lib.core.settings import MSSQL_ERROR_CHUNK_LENGTH
@@ -142,7 +142,8 @@ def _oneShotErrorUse(expression, field=None):
                     retVal = output
                     break
         except:
-            hashDBWrite(expression, "%s%s" % (retVal, PARTIAL_VALUE_MARKER))
+            if retVal is not None:
+                hashDBWrite(expression, "%s%s" % (retVal, PARTIAL_VALUE_MARKER))
             raise
 
         retVal = decodeHexValue(retVal) if conf.hexConvert else retVal
@@ -152,7 +153,8 @@ def _oneShotErrorUse(expression, field=None):
 
         retVal = _errorReplaceChars(retVal)
 
-        hashDBWrite(expression, retVal)
+        if retVal is not None:
+            hashDBWrite(expression, retVal)
 
     else:
         _ = "%s(?P<result>.*?)%s" % (kb.chars.start, kb.chars.stop)
@@ -189,7 +191,7 @@ def _errorFields(expression, expressionFields, expressionFieldsList, num=None, e
         if kb.fileReadMode and output and output.strip():
             print
         elif output is not None and not (threadData.resumed and kb.suppressResumeInfo) and not (emptyFields and field in emptyFields):
-            logger.info("%s: %s" % ("resumed" if threadData.resumed else "retrieved", safecharencode(output)))
+            dataToStdout("[%s] [INFO] %s: %s\n" % (time.strftime("%X"), "resumed" if threadData.resumed else "retrieved", safecharencode(output)))
 
         if isinstance(num, int):
             expression = origExpr
@@ -242,6 +244,9 @@ def errorUse(expression, dump=False):
     value = None
 
     _, _, _, _, _, expressionFieldsList, expressionFields, _ = agent.getFields(expression)
+
+    # Set kb.partRun in case the engine is called from the API
+    kb.partRun = getPartRun(alias=False) if hasattr(conf, "api") else None
 
     # We have to check if the SQL query might return multiple entries
     # and in such case forge the SQL limiting the query output one

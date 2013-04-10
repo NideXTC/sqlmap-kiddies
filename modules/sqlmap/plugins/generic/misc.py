@@ -5,15 +5,17 @@ Copyright (c) 2006-2013 sqlmap developers (http://sqlmap.org/)
 See the file 'doc/COPYING' for copying permission
 """
 
+import ntpath
 import re
 
 from lib.core.common import Backend
 from lib.core.common import hashDBWrite
-from lib.core.common import isTechniqueAvailable
+from lib.core.common import isStackingAvailable
 from lib.core.common import normalizePath
 from lib.core.common import ntToPosixSlashes
 from lib.core.common import posixToNtSlashes
 from lib.core.common import readInput
+from lib.core.common import singleTimeDebugMessage
 from lib.core.common import unArrayizeValue
 from lib.core.data import conf
 from lib.core.data import kb
@@ -22,7 +24,6 @@ from lib.core.data import queries
 from lib.core.enums import DBMS
 from lib.core.enums import HASHDB_KEYS
 from lib.core.enums import OS
-from lib.core.enums import PAYLOAD
 from lib.core.exception import SqlmapNoneDataException
 from lib.core.exception import SqlmapUnsupportedFeatureException
 from lib.request import inject
@@ -36,6 +37,17 @@ class Miscellaneous:
         pass
 
     def getRemoteTempPath(self):
+        if not conf.tmpPath and Backend.isDbms(DBMS.MSSQL):
+            debugMsg = "identifying Microsoft SQL Server error log directory "
+            debugMsg += "that sqlmap will use to store temporary files with "
+            debugMsg += "commands' output"
+            logger.debug(debugMsg)
+
+            _ = unArrayizeValue(inject.getValue("SELECT SERVERPROPERTY('ErrorLogFileName')", safeCharEncode=False))
+
+            if _:
+                conf.tmpPath = ntpath.dirname(_)
+
         if not conf.tmpPath:
             if Backend.isOs(OS.WINDOWS):
                 if conf.direct:
@@ -57,6 +69,8 @@ class Miscellaneous:
 
         conf.tmpPath = normalizePath(conf.tmpPath)
         conf.tmpPath = ntToPosixSlashes(conf.tmpPath)
+
+        singleTimeDebugMessage("going to use %s as temporary files directory" % conf.tmpPath)
 
         hashDBWrite(HASHDB_KEYS.CONF_TMP_PATH, conf.tmpPath)
 
@@ -105,7 +119,11 @@ class Miscellaneous:
 
     def createSupportTbl(self, tblName, tblField, tblType):
         inject.goStacked("DROP TABLE %s" % tblName, silent=True)
-        inject.goStacked("CREATE TABLE %s(%s %s)" % (tblName, tblField, tblType))
+
+        if Backend.isDbms(DBMS.MSSQL) and tblName == self.cmdTblName:
+            inject.goStacked("CREATE TABLE %s(id INT PRIMARY KEY IDENTITY, %s %s)" % (tblName, tblField, tblType))
+        else:
+            inject.goStacked("CREATE TABLE %s(%s %s)" % (tblName, tblField, tblType))
 
     def cleanup(self, onlyFileTbl=False, udfDict=None, web=False):
         """
@@ -119,7 +137,7 @@ class Miscellaneous:
             self.delRemoteFile(self.webStagerFilePath)
             self.delRemoteFile(self.webBackdoorFilePath)
 
-        if not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED) and not conf.direct:
+        if not isStackingAvailable() and not conf.direct:
             return
 
         if Backend.isOs(OS.WINDOWS):

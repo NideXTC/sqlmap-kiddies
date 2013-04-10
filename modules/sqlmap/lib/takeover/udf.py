@@ -10,7 +10,7 @@ import os
 from lib.core.agent import agent
 from lib.core.common import dataToStdout
 from lib.core.common import Backend
-from lib.core.common import isTechniqueAvailable
+from lib.core.common import isStackingAvailable
 from lib.core.common import readInput
 from lib.core.data import conf
 from lib.core.data import logger
@@ -19,7 +19,6 @@ from lib.core.enums import DBMS
 from lib.core.enums import CHARSET_TYPE
 from lib.core.enums import EXPECTED
 from lib.core.enums import OS
-from lib.core.enums import PAYLOAD
 from lib.core.common import unArrayizeValue
 from lib.core.exception import SqlmapFilePathException
 from lib.core.exception import SqlmapMissingMandatoryOptionException
@@ -163,6 +162,8 @@ class UDF:
                     written = True
                 else:
                     return False
+        else:
+            return True
 
         for udf, inpRet in udfDict.items():
             if udf in self.udfToCreate and udf not in self.createdUdf:
@@ -188,7 +189,7 @@ class UDF:
             logger.error(errMsg)
             return
 
-        if not isTechniqueAvailable(PAYLOAD.TECHNIQUE.STACKED) and not conf.direct:
+        if not isStackingAvailable() and not conf.direct:
             errMsg = "UDF injection feature requires stacked queries SQL injection"
             logger.error(errMsg)
             return

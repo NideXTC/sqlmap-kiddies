@@ -36,13 +36,15 @@ UPPER_RATIO_BOUND = 0.98
 # Markers for special cases when parameter values contain html encoded characters
 PARAMETER_AMP_MARKER = "__AMP__"
 PARAMETER_SEMICOLON_MARKER = "__SEMICOLON__"
-PARTIAL_VALUE_MARKER = "__PARTIAL__"
+PARTIAL_VALUE_MARKER = "__PARTIAL_VALUE__"
+PARTIAL_HEX_VALUE_MARKER = "__PARTIAL_HEX_VALUE__"
 URI_QUESTION_MARKER = "__QUESTION_MARK__"
 ASTERISK_MARKER = "__ASTERISK_MARK__"
+REPLACEMENT_MARKER = "__REPLACEMENT_MARK__"
 
 PAYLOAD_DELIMITER = "\x00"
 CHAR_INFERENCE_MARK = "%c"
-PRINTABLE_CHAR_REGEX = r"[^\x00-\x1f\x7e-\xff]"
+PRINTABLE_CHAR_REGEX = r"[^\x00-\x1f\x7f-\xff]"
 
 # Regular expression used for recognition of generic permission messages
 PERMISSION_DENIED_REGEX = r"(command|permission|access)\s*(was|is)?\s*denied"
@@ -51,7 +53,7 @@ PERMISSION_DENIED_REGEX = r"(command|permission|access)\s*(was|is)?\s*denied"
 MAX_CONNECTIONS_REGEX = r"max.+connections"
 
 # Regular expression used for extracting results from google search
-GOOGLE_REGEX = r"url\?\w+=(http[^>]+)&(sa=U|rct=j)"
+GOOGLE_REGEX = r"url\?\w+=((?![^>]+webcache\.googleusercontent\.com)http[^>]+)&(sa=U|rct=j)"
 
 # Regular expression used for extracting content from "textual" tags
 TEXT_TAG_REGEX = r"(?si)<(abbr|acronym|b|blockquote|br|center|cite|code|dt|em|font|h\d|i|li|p|pre|q|strong|sub|sup|td|th|title|tt|u)(?!\w).*?>(?P<result>[^<]+)"
@@ -62,6 +64,9 @@ CONCAT_VALUE_DELIMITER = '|'
 
 # Coefficient used for a time-based query delay checking (must be >= 7)
 TIME_STDEV_COEFF = 7
+
+# Minimum response time that can be even considered as delayed (not a complete requirement)
+MIN_VALID_DELAYED_RESPONSE = 0.5
 
 # Standard deviation after which a warning message should be displayed about connection lags
 WARN_TIME_STDEV = 0.5
@@ -81,8 +86,8 @@ HTTP_ACCEPT_HEADER_VALUE = "text/html,application/xhtml+xml,application/xml;q=0.
 # Default value for HTTP Accept-Encoding header
 HTTP_ACCEPT_ENCODING_HEADER_VALUE = "gzip,deflate"
 
-# HTTP timeout in silent mode
-HTTP_SILENT_TIMEOUT = 3
+# Default timeout for running commands over backdoor
+BACKDOOR_RUN_CMD_TIMEOUT = 5
 
 # Maximum number of techniques used in inject.py/getValue() per one value
 MAX_TECHNIQUES_PER_VALUE = 2
@@ -111,6 +116,9 @@ INFERENCE_EQUALS_CHAR = "="
 # Character used for operation "not-equals" in inference
 INFERENCE_NOT_EQUALS_CHAR = "!="
 
+# String used for representation of unknown dbms
+UNKNOWN_DBMS = "Unknown"
+
 # String used for representation of unknown dbms version
 UNKNOWN_DBMS_VERSION = "Unknown"
 
@@ -122,6 +130,9 @@ DUMMY_USER_PREFIX = "__dummy__"
 
 # Reference: http://en.wikipedia.org/wiki/ISO/IEC_8859-1
 DEFAULT_PAGE_ENCODING = "iso-8859-1"
+
+# URL used in dummy runs
+DUMMY_URL = "http://foo/bar?id=1"
 
 # System variables
 IS_WIN = subprocess.mswindows
@@ -296,7 +307,7 @@ REFLECTED_MAX_REGEX_PARTS = 10
 # Chars which can be used as a failsafe values in case of too long URL encoding value
 URLENCODE_FAILSAFE_CHARS = "()|,"
 
-# Maximum length of urlencoded value after which failsafe procedure takes away
+# Maximum length of URL encoded value after which failsafe procedure takes away
 URLENCODE_CHAR_LIMIT = 2000
 
 # Default schema for Microsoft SQL Server DBMS
@@ -362,6 +373,9 @@ DUMMY_USER_INJECTION = r"(?i)[^\w](AND|OR)\s+[^\s]+[=><]"
 # Extensions skipped by crawler
 CRAWL_EXCLUDE_EXTENSIONS = ("gif", "jpg", "jar", "tif", "bmp", "war", "ear", "mpg", "wmv", "mpeg", "scm", "iso", "dmp", "dll", "cab", "so", "avi", "bin", "exe", "iso", "tar", "png", "pdf", "ps", "mp3", "zip", "rar", "gz")
 
+# Patterns often seen in HTTP headers containing custom injection marking character
+PROBLEMATIC_CUSTOM_INJECTION_PATTERNS = r"(\bq=[^;']+)|(\*/\*)"
+
 # Template used for common table existence check
 BRUTE_TABLE_EXISTS_TEMPLATE = "EXISTS(SELECT %d FROM %s)"
 
@@ -369,7 +383,16 @@ BRUTE_TABLE_EXISTS_TEMPLATE = "EXISTS(SELECT %d FROM %s)"
 BRUTE_COLUMN_EXISTS_TEMPLATE = "EXISTS(SELECT %s FROM %s)"
 
 # Payload used for checking of existence of IDS/WAF (dummier the better)
-IDS_WAF_CHECK_PAYLOAD = "AND 1=1 UNION ALL SELECT 1,2,3,table_name FROM information_schema.tables"
+IDS_WAF_CHECK_PAYLOAD = "AND 1=1 UNION ALL SELECT 1,2,3,table_name FROM information_schema.tables WHERE 2>1"
+
+# Vectors used for provoking specific WAF/IDS/IPS behavior(s)
+WAF_ATTACK_VECTORS = (
+                        "",  # NIL
+                        "search=<script>alert(1)</script>",
+                        "file=../../../../etc/passwd",
+                        "q=<invalid>foobar",
+                        "id=1 %s" % IDS_WAF_CHECK_PAYLOAD
+                     )
 
 # Used for status representation in dictionary attack phase
 ROTATING_CHARS = ('\\', '|', '|', '/', '-')
@@ -459,13 +482,16 @@ VALID_TIME_CHARS_RUN_THRESHOLD = 100
 CHECK_ZERO_COLUMNS_THRESHOLD = 10
 
 # Boldify all logger messages containing these "patterns"
-BOLD_PATTERNS = ("' injectable", "might be injectable", "' is vulnerable", "is not injectable", "test failed", "test passed", "live test final result")
+BOLD_PATTERNS = ("' injectable", "might be injectable", "' is vulnerable", "is not injectable", "test failed", "test passed", "live test final result", "test shows that")
 
 # Generic www root directory names
 GENERIC_DOC_ROOT_DIRECTORY_NAMES = ("htdocs", "wwwroot", "www")
 
 # Maximum length of a help part containing switch/option name(s)
 MAX_HELP_OPTION_LENGTH = 18
+
+# Maximum number of connection retries (to prevent problems with recursion)
+MAX_CONNECT_RETRIES = 100
 
 # Strings for detecting formatting errors
 FORMAT_EXCEPTION_STRINGS = ("Type mismatch", "Error converting", "Failed to convert", "System.FormatException", "java.lang.NumberFormatException")
@@ -492,7 +518,10 @@ JSON_RECOGNITION_REGEX = r'(?s)\A\s*\{.*"[^"]+"\s*:\s*("[^"]+"|\d+).*\}\s*\Z'
 MULTIPART_RECOGNITION_REGEX = r"(?i)Content-Disposition:[^;]+;\s*name="
 
 # Default POST data content-type
-DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded"
+DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded; charset=utf-8"
+
+# Raw text POST data content-type
+PLAIN_TEXT_CONTENT_TYPE = "text/plain; charset=utf-8"
 
 # Length used while checking for existence of Suhosin-patch (like) protection mechanism
 SUHOSIN_MAX_VALUE_LENGTH = 512
@@ -505,6 +534,12 @@ FORM_SEARCH_REGEX = r"(?si)<form(?!.+<form).+?</form>"
 
 # Minimum field entry length needed for encoded content (hex, base64,...) check
 MIN_ENCODED_LEN_CHECK = 5
+
+# Timeout in seconds in which Metasploit remote session has to be initialized
+METASPLOIT_SESSION_TIMEOUT = 180
+
+# Reference: http://www.cookiecentral.com/faq/#3.5
+NETSCAPE_FORMAT_HEADER_COOKIES = "# Netscape HTTP Cookie File."
 
 # CSS style used in HTML dump format
 HTML_DUMP_CSS_STYLE = """<style>

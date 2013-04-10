@@ -18,6 +18,7 @@ from lib.core.common import randomInt
 from lib.core.common import randomStr
 from lib.core.common import safeStringFormat
 from lib.core.common import safeSQLIdentificatorNaming
+from lib.core.common import unsafeSQLIdentificatorNaming
 from lib.core.data import conf
 from lib.core.data import kb
 from lib.core.data import logger
@@ -49,6 +50,10 @@ def _addPageTextWords():
 
 def tableExists(tableFile, regex=None):
     result = inject.checkBooleanExpression("%s" % safeStringFormat(BRUTE_TABLE_EXISTS_TEMPLATE, (randomInt(1), randomStr())))
+
+    if conf.db and Backend.getIdentifiedDbms() in (DBMS.ORACLE, DBMS.DB2):
+        conf.db = conf.db.upper()
+
     if result:
         errMsg = "can't use table existence check because of detected invalid results "
         errMsg += "(most probably caused by inability of the used injection "
@@ -82,7 +87,7 @@ def tableExists(tableFile, regex=None):
                 kb.locks.count.release()
                 break
 
-            if conf.db and METADB_SUFFIX not in conf.db:
+            if conf.db and METADB_SUFFIX not in conf.db and Backend.getIdentifiedDbms() not in (DBMS.SQLITE, DBMS.ACCESS, DBMS.FIREBIRD):
                 fullTableName = "%s%s%s" % (conf.db, '..' if Backend.getIdentifiedDbms() in (DBMS.MSSQL, DBMS.SYBASE) else '.', table)
             else:
                 fullTableName = table
@@ -95,9 +100,9 @@ def tableExists(tableFile, regex=None):
                 threadData.shared.value.append(table)
                 threadData.shared.unique.add(table.lower())
 
-                if conf.verbose in (1, 2):
+                if conf.verbose in (1, 2) and not hasattr(conf, "api"):
                     clearConsoleLine(True)
-                    infoMsg = "[%s] [INFO] retrieved: %s\r\n" % (time.strftime("%X"), table)
+                    infoMsg = "[%s] [INFO] retrieved: %s\r\n" % (time.strftime("%X"), unsafeSQLIdentificatorNaming(table))
                     dataToStdout(infoMsg, True)
 
             if conf.verbose in (1, 2):
@@ -140,7 +145,11 @@ def columnExists(columnFile, regex=None):
         errMsg = "missing table parameter"
         raise SqlmapMissingMandatoryOptionException(errMsg)
 
+    if conf.db and Backend.getIdentifiedDbms() in (DBMS.ORACLE, DBMS.DB2):
+        conf.db = conf.db.upper()
+
     result = inject.checkBooleanExpression(safeStringFormat(BRUTE_COLUMN_EXISTS_TEMPLATE, (randomStr(), randomStr())))
+
     if result:
         errMsg = "can't use column existence check because of detected invalid results "
         errMsg += "(most probably caused by inability of the used injection "
@@ -155,7 +164,8 @@ def columnExists(columnFile, regex=None):
     columns = filterListValue(columns, regex)
 
     table = safeSQLIdentificatorNaming(conf.tbl, True)
-    if conf.db and METADB_SUFFIX not in conf.db:
+
+    if conf.db and METADB_SUFFIX not in conf.db and Backend.getIdentifiedDbms() not in (DBMS.SQLITE, DBMS.ACCESS, DBMS.FIREBIRD):
         table = "%s.%s" % (safeSQLIdentificatorNaming(conf.db), table)
 
     kb.threadContinue = True
@@ -186,9 +196,9 @@ def columnExists(columnFile, regex=None):
             if result:
                 threadData.shared.value.append(column)
 
-                if conf.verbose in (1, 2):
+                if conf.verbose in (1, 2) and not hasattr(conf, "api"):
                     clearConsoleLine(True)
-                    infoMsg = "[%s] [INFO] retrieved: %s\r\n" % (time.strftime("%X"), column)
+                    infoMsg = "[%s] [INFO] retrieved: %s\r\n" % (time.strftime("%X"), unsafeSQLIdentificatorNaming(column))
                     dataToStdout(infoMsg, True)
 
             if conf.verbose in (1, 2):

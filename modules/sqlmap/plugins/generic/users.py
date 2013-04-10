@@ -80,7 +80,7 @@ class Users:
             query = queries[Backend.getIdentifiedDbms()].is_dba.query
 
         query = agent.forgeCaseStatement(query)
-        kb.data.isDba = inject.checkBooleanExpression(query)
+        kb.data.isDba = inject.checkBooleanExpression(query) or False
 
         return kb.data.isDba
 
@@ -295,23 +295,23 @@ class Users:
             errMsg += "database users (most probably because the session "
             errMsg += "user has no read privileges over the relevant "
             errMsg += "system database table)"
-            raise SqlmapNoneDataException(errMsg)
+            logger.error(errMsg)
         else:
             for user in kb.data.cachedUsersPasswords:
                 kb.data.cachedUsersPasswords[user] = list(set(kb.data.cachedUsersPasswords[user]))
 
-        storeHashesToFile(kb.data.cachedUsersPasswords)
+            storeHashesToFile(kb.data.cachedUsersPasswords)
 
-        message = "do you want to perform a dictionary-based attack "
-        message += "against retrieved password hashes? [Y/n/q]"
-        test = readInput(message, default="Y")
+            message = "do you want to perform a dictionary-based attack "
+            message += "against retrieved password hashes? [Y/n/q]"
+            test = readInput(message, default="Y")
 
-        if test[0] in ("n", "N"):
-            pass
-        elif test[0] in ("q", "Q"):
-            raise SqlmapUserQuitException
-        else:
-            attackCachedUsersPasswords()
+            if test[0] in ("n", "N"):
+                pass
+            elif test[0] in ("q", "Q"):
+                raise SqlmapUserQuitException
+            else:
+                attackCachedUsersPasswords()
 
         return kb.data.cachedUsersPasswords
 
@@ -474,7 +474,7 @@ class Users:
                 count = inject.getValue(query, union=False, error=False, expected=EXPECTED.INT, charsetType=CHARSET_TYPE.DIGITS)
 
                 if not isNumPosStrValue(count):
-                    if Backend.isDbms(DBMS.ORACLE) and not query2:
+                    if not retrievedUsers and Backend.isDbms(DBMS.ORACLE) and not query2:
                         infoMsg = "trying with table USER_SYS_PRIVS"
                         logger.info(infoMsg)
 

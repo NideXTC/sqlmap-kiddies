@@ -30,10 +30,10 @@ from lib.core.enums import PAYLOAD
 from lib.core.enums import PLACE
 from lib.core.enums import POST_HINT
 from lib.core.exception import SqlmapNoneDataException
-from lib.core.settings import ASTERISK_MARKER
 from lib.core.settings import CUSTOM_INJECTION_MARK_CHAR
 from lib.core.settings import GENERIC_SQL_COMMENT
 from lib.core.settings import PAYLOAD_DELIMITER
+from lib.core.settings import REPLACEMENT_MARKER
 from lib.core.unescaper import unescaper
 
 class Agent(object):
@@ -94,7 +94,12 @@ class Agent(object):
         elif place == PLACE.CUSTOM_POST:
             paramString = origValue
             origValue = origValue.split(CUSTOM_INJECTION_MARK_CHAR)[0]
-            origValue = extractRegexResult(r"(?s)(?P<result>(\W+\Z|\w+\Z))", origValue)
+            if kb.postHint in (POST_HINT.SOAP, POST_HINT.XML):
+                origValue = origValue.split('>')[-1]
+            elif kb.postHint == POST_HINT.JSON:
+                origValue = extractRegexResult(r"(?s)\"\s*:\s*(?P<result>\d+\Z)", origValue) or extractRegexResult(r'(?s)(?P<result>[^"]+\Z)', origValue)
+            else:
+                origValue = extractRegexResult(r"(?s)(?P<result>[^\s<>{}();'\"]+\Z)", origValue)
         elif place == PLACE.CUSTOM_HEADER:
             paramString = origValue
             origValue = origValue.split(CUSTOM_INJECTION_MARK_CHAR)[0]
@@ -107,7 +112,8 @@ class Agent(object):
                 if conf.invalidLogical:
                     match = re.search(r'\A[^ ]+', newValue)
                     newValue = newValue[len(match.group() if match else ""):]
-                    value = "%s%s AND %s=%s" % (origValue, match.group() if match else "", randomInt(2), randomInt(2))
+                    _ = randomInt(2)
+                    value = "%s%s AND %s=%s" % (origValue, match.group() if match else "", _, _ + 1)
                 elif conf.invalidBignum:
                     value = "%d.%d" % (randomInt(6), randomInt(1))
                 else:
@@ -128,9 +134,9 @@ class Agent(object):
             _ = "%s%s" % (origValue, CUSTOM_INJECTION_MARK_CHAR)
             if kb.postHint == POST_HINT.JSON and not isNumber(newValue) and not '"%s"' % _ in paramString:
                 newValue = '"%s"' % newValue
-            newValue = newValue.replace(CUSTOM_INJECTION_MARK_CHAR, ASTERISK_MARKER)
+            newValue = newValue.replace(CUSTOM_INJECTION_MARK_CHAR, REPLACEMENT_MARKER)
             retVal = paramString.replace(_, self.addPayloadDelimiters(newValue))
-            retVal = retVal.replace(CUSTOM_INJECTION_MARK_CHAR, "").replace(ASTERISK_MARKER, CUSTOM_INJECTION_MARK_CHAR)
+            retVal = retVal.replace(CUSTOM_INJECTION_MARK_CHAR, "").replace(REPLACEMENT_MARKER, CUSTOM_INJECTION_MARK_CHAR)
         elif place in (PLACE.USER_AGENT, PLACE.REFERER, PLACE.HOST):
             retVal = paramString.replace(origValue, self.addPayloadDelimiters(newValue))
         else:
@@ -333,8 +339,7 @@ class Agent(object):
         if field:
             rootQuery = queries[Backend.getIdentifiedDbms()]
 
-            if field.startswith("(CASE") or field.startswith("(IIF") or\
-            conf.noCast:
+            if field.startswith("(CASE") or field.startswith("(IIF") or conf.noCast:
                 nulledCastedField = field
             else:
                 if not (Backend.isDbms(DBMS.SQLITE) and not isDBMSVersionAtLeast('3')):
@@ -344,7 +349,7 @@ class Agent(object):
                 else:
                     nulledCastedField = rootQuery.isnull.query % nulledCastedField
 
-            if conf.hexConvert:
+            if conf.hexConvert or conf.binaryFields and field in conf.binaryFields.split(','):
                 nulledCastedField = self.hexConvertField(nulledCastedField)
 
         return nulledCastedField
@@ -416,6 +421,7 @@ class Agent(object):
 
         prefixRegex = r"(?:\s+(?:FIRST|SKIP)\s+\d+)*"
         fieldsSelectTop = re.search(r"\ASELECT\s+TOP\s+[\d]+\s+(.+?)\s+FROM", query, re.I)
+        fieldsSelectRownum = re.search(r"\ASELECT\s+([^()]+?),\s*ROWNUM AS LIMIT FROM", query, re.I)
         fieldsSelectDistinct = re.search(r"\ASELECT%s\s+DISTINCT\((.+?)\)\s+FROM" % prefixRegex, query, re.I)
         fieldsSelectCase = re.search(r"\ASELECT%s\s+(\(CASE WHEN\s+.+\s+END\))" % prefixRegex, query, re.I)
         fieldsSelectFrom = re.search(r"\ASELECT%s\s+(.+?)\s+FROM " % prefixRegex, query, re.I)
@@ -425,6 +431,10 @@ class Agent(object):
         fieldsMinMaxstr = re.search(r"(?:MIN|MAX)\(([^\(\)]+)\)", query, re.I)
         fieldsNoSelect = query
 
+        _ = zeroDepthSearch(query, " FROM ")
+        if not _:
+            fieldsSelectFrom = None
+
         if fieldsSubstr:
             fieldsToCastStr = query
         elif fieldsMinMaxstr:
@@ -433,12 +443,13 @@ class Agent(object):
             fieldsToCastStr = fieldsSelect.groups()[0]
         elif fieldsSelectTop:
             fieldsToCastStr = fieldsSelectTop.groups()[0]
+        elif fieldsSelectRownum:
+            fieldsToCastStr = fieldsSelectRownum.groups()[0]
         elif fieldsSelectDistinct:
             fieldsToCastStr = fieldsSelectDistinct.groups()[0]
         elif fieldsSelectCase:
             fieldsToCastStr = fieldsSelectCase.groups()[0]
         elif fieldsSelectFrom:
-            _ = zeroDepthSearch(query, " FROM ")
             fieldsToCastStr = query[:unArrayizeValue(_)] if _ else query
             fieldsToCastStr = re.sub(r"\ASELECT%s\s+" % prefixRegex, "", fieldsToCastStr)
         elif fieldsSelect:
@@ -460,12 +471,12 @@ class Agent(object):
 
     def preprocessField(self, table, field):
         """
-        Does a field preprocessing (if needed) based on it's type (e.g. image to text)
+        Does a field preprocessing (if needed) based on its type (e.g. image to text)
         Note: used primarily in dumping of custom tables
         """
 
         retVal = field
-        if conf.db in table:
+        if conf.db and table and conf.db in table:
             table = table.split(conf.db)[-1].strip('.')
         try:
             columns = kb.data.cachedColumns[safeSQLIdentificatorNaming(conf.db)][safeSQLIdentificatorNaming(table, True)]
@@ -636,7 +647,10 @@ class Agent(object):
         @rtype: C{str}
         """
 
-        fromTable = fromTable or FROM_DUMMY_TABLE.get(Backend.getIdentifiedDbms(), "")
+        if conf.uFrom:
+            fromTable = " FROM %s" % conf.uFrom
+        else:
+            fromTable = fromTable or FROM_DUMMY_TABLE.get(Backend.getIdentifiedDbms(), "")
 
         if query.startswith("SELECT "):
             query = query[len("SELECT "):]
@@ -868,6 +882,9 @@ class Agent(object):
                     limitedQuery += "NOT IN (%s" % (limitStr % num)
                     limitedQuery += "%s %s ORDER BY %s) ORDER BY %s" % (self.nullAndCastField(uniqueField or field), fromFrom, uniqueField or "1", uniqueField or "1")
                 else:
+                    match = re.search(" ORDER BY (\w+)\Z", query)
+                    field = match.group(1) if match else field
+
                     if " WHERE " in limitedQuery:
                         limitedQuery = "%s AND %s " % (limitedQuery, field)
                     else:
@@ -885,24 +902,13 @@ class Agent(object):
         lengthQuery = queries[Backend.getIdentifiedDbms()].length.query
         select = re.search("\ASELECT\s+", expression, re.I)
         selectTopExpr = re.search("\ASELECT\s+TOP\s+[\d]+\s+(.+?)\s+FROM", expression, re.I)
-        selectDistinctExpr = re.search("\ASELECT\s+DISTINCT\((.+?)\)\s+FROM", expression, re.I)
-        selectFromExpr = re.search("\ASELECT\s+(.+?)\s+FROM", expression, re.I)
-        selectExpr = re.search("\ASELECT\s+(.+)$", expression, re.I)
 
         _, _, _, _, _, _, fieldsStr, _ = self.getFields(expression)
 
-        if any((selectTopExpr, selectDistinctExpr, selectFromExpr, selectExpr)):
-            query = fieldsStr
-        else:
-            query = expression
-
-        if selectDistinctExpr:
-            lengthExpr = "SELECT %s FROM (%s)" % (lengthQuery % query, expression)
-
-            if Backend.getIdentifiedDbms() in (DBMS.MYSQL, DBMS.PGSQL):
-                lengthExpr += " AS %s" % randomStr(lowercase=True)
+        if selectTopExpr:
+            lengthExpr = lengthQuery % ("(%s)" % expression)
         elif select:
-            lengthExpr = expression.replace(query, lengthQuery % query, 1)
+            lengthExpr = expression.replace(fieldsStr, lengthQuery % fieldsStr, 1)
         else:
             lengthExpr = lengthQuery % expression
 

@@ -9,6 +9,14 @@ class xrange(object):
     """
     Advanced (re)implementation of xrange (supports slice/copy/etc.)
     Reference: http://code.activestate.com/recipes/521885-a-pythonic-implementation-of-xrange/
+
+    >>> foobar = xrange(1, 10)
+    >>> 7 in foobar
+    True
+    >>> 11 in foobar
+    False
+    >>> foobar[0]
+    1
     """
 
     __slots__ = ['_slice']
@@ -53,6 +61,9 @@ class xrange(object):
 
     def _len(self):
         return max(0, int((self.stop - self.start) / self.step))
+
+    def __contains__(self, value):
+        return (self.start <= value < self.stop) and (value - self.start) % self.step == 0
 
     def __getitem__(self, index):
         if isinstance(index, slice):

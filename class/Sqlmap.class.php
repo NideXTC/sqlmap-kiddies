@@ -18,7 +18,7 @@ class Sqlmap {
             }
         }
 
-        $cmd = "python ../modules/sqlmap/sqlmap.py -u \"".$url."\" --dump-all " . $option . " --batch";
+        $cmd = "python ../modules/sqlmap/sqlmap.py -u \"".$url."\" --purge-output --dump-all " . $option . " --batch";
         //echo $cmd;
 
         $descriptorspec = array(

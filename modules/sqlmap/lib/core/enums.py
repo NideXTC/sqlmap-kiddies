@@ -76,6 +76,12 @@ class HTTPMETHOD:
     GET = "GET"
     POST = "POST"
     HEAD = "HEAD"
+    PUT = "PUT"
+    DELETE = "DETELE"
+    TRACE = "TRACE"
+    OPTIONS = "OPTIONS"
+    CONNECT = "CONNECT"
+    PATCH = "PATCH"
 
 class NULLCONNECTION:
     HEAD = "HEAD"
@@ -107,6 +113,9 @@ class HASH:
     ORACLE_OLD = r'(?i)\A[01-9a-f]{16}\Z'
     MD5_GENERIC = r'(?i)\A[0-9a-f]{32}\Z'
     SHA1_GENERIC = r'(?i)\A[0-9a-f]{40}\Z'
+    SHA224_GENERIC = r'(?i)\A[0-9a-f]{28}\Z'
+    SHA384_GENERIC = r'(?i)\A[0-9a-f]{48}\Z'
+    SHA512_GENERIC = r'(?i)\A[0-9a-f]{64}\Z'
     CRYPT_GENERIC = r'(?i)\A(?!\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z)(?![0-9]+\Z)[./0-9A-Za-z]{13}\Z'
     WORDPRESS = r'(?i)\A\$P\$[./0-9A-Za-z]{31}\Z'
 
@@ -130,7 +139,7 @@ class DUMP_FORMAT:
     HTML = "HTML"
     SQLITE = "SQLITE"
 
-class HTTPHEADER:
+class HTTP_HEADER:
     ACCEPT = "Accept"
     ACCEPT_CHARSET = "Accept-Charset"
     ACCEPT_ENCODING = "Accept-Encoding"
@@ -150,7 +159,10 @@ class HTTPHEADER:
     PROXY_CONNECTION = "Proxy-Connection"
     RANGE = "Range"
     REFERER = "Referer"
+    SERVER = "Server"
     USER_AGENT = "User-Agent"
+    TRANSFER_ENCODING = "Transfer-Encoding"
+    VIA = "Via"
 
 class EXPECTED:
     BOOL = "bool"
@@ -243,3 +255,67 @@ class WEB_API:
     ASP = "asp"
     ASPX = "aspx"
     JSP = "jsp"
+
+class CONTENT_TYPE:
+    TECHNIQUES = 0
+    DBMS_FINGERPRINT = 1
+    BANNER = 2
+    CURRENT_USER = 3
+    CURRENT_DB = 4
+    HOSTNAME = 5
+    IS_DBA = 6
+    USERS = 7
+    PASSWORDS = 8
+    PRIVILEGES = 9
+    ROLES = 10
+    DBS = 11
+    TABLES = 12
+    COLUMNS = 13
+    SCHEMA = 14
+    COUNT = 15
+    DUMP_TABLE = 16
+    SEARCH = 17
+    SQL_QUERY = 18
+    COMMON_TABLES = 19
+    COMMON_COLUMNS = 20
+    FILE_READ = 21
+    FILE_WRITE = 22
+    OS_CMD = 23
+    REG_READ = 24
+
+PART_RUN_CONTENT_TYPES = {
+    "checkDbms": CONTENT_TYPE.TECHNIQUES,
+    "getFingerprint": CONTENT_TYPE.DBMS_FINGERPRINT,
+    "getBanner": CONTENT_TYPE.BANNER,
+    "getCurrentUser": CONTENT_TYPE.CURRENT_USER,
+    "getCurrentDb": CONTENT_TYPE.CURRENT_DB,
+    "getHostname": CONTENT_TYPE.HOSTNAME,
+    "isDba": CONTENT_TYPE.IS_DBA,
+    "getUsers": CONTENT_TYPE.USERS,
+    "getPasswordHashes": CONTENT_TYPE.PASSWORDS,
+    "getPrivileges": CONTENT_TYPE.PRIVILEGES,
+    "getRoles": CONTENT_TYPE.ROLES,
+    "getDbs": CONTENT_TYPE.DBS,
+    "getTables": CONTENT_TYPE.TABLES,
+    "getColumns": CONTENT_TYPE.COLUMNS,
+    "getSchema": CONTENT_TYPE.SCHEMA,
+    "getCount": CONTENT_TYPE.COUNT,
+    "dumpTable": CONTENT_TYPE.DUMP_TABLE,
+    "search": CONTENT_TYPE.SEARCH,
+    "sqlQuery": CONTENT_TYPE.SQL_QUERY,
+    "tableExists": CONTENT_TYPE.COMMON_TABLES,
+    "columnExists": CONTENT_TYPE.COMMON_COLUMNS,
+    "readFile": CONTENT_TYPE.FILE_READ,
+    "writeFile": CONTENT_TYPE.FILE_WRITE,
+    "osCmd": CONTENT_TYPE.OS_CMD,
+    "regRead": CONTENT_TYPE.REG_READ
+}
+
+class CONTENT_STATUS:
+    IN_PROGRESS = 0
+    COMPLETE = 1
+
+class AUTH_TYPE:
+    BASIC = "basic"
+    DIGEST = "digest"
+    NTLM = "ntlm"
