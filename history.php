@@ -30,19 +30,34 @@
                       <div class="row-fluid">
                         <div class="accordion" id="accordion">
                           <?php
-                          $result = $file_db->query('SELECT * FROM websites');
-                          foreach($result as $row) {
+                          $websites = $file_db->query('SELECT * FROM websites');
+                          foreach($websites as $website) {
                           ?>
                           <div class="accordion-group">
                             <div class="accordion-heading">
-                              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse<?php echo $row['id'] ?>">
-                                <?php echo  $row['name']; ?>
-                                <?php echo "<span class='pull-right'>" . date("m/d/Y", $row['time']) . "</span>"; ?>
+                              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse<?php echo $website['id'] ?>">
+                                <?php echo  $website['name']; ?>
+                                <?php echo "<span class='pull-right'>" . date("m/d/Y", $website['time']) . "</span>"; ?>
                               </a>
                             </div>
-                            <div id="collapse<?php echo $row['id'] ?>" class="accordion-body collapse in">
+                            <div id="collapse<?php echo $website['id'] ?>" class="accordion-body collapse in">
                               <div class="accordion-inner">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci consequuntur provident nihil animi dignissimos repudiandae iste impedit doloremque ab facilis vitae unde nisi nemo quisquam esse enim laudantium quae sapiente!
+                                <table class="table table-striped">
+                                  <?php
+                                  $links = $file_db->query("SELECT * FROM links WHERE website_id ='". $website['id']. "'");
+                                  foreach($links as $link) {
+                                    echo "<tr>";
+                                    echo "<td>" . $link['url'] . "</td>";
+                                    if($link['success'] == 1){
+                                      echo "<td><span class='label label-success'>Successed</td>";
+                                    }else{
+                                      echo "<td><span class='label label-important'>Failed</td>";
+                                    }
+                                    echo "</span>";
+                                    echo "</tr>";
+                                  }
+                                  ?>
+                                </table>
                               </div>
                             </div>
                           </div>

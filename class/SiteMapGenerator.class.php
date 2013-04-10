@@ -206,26 +206,27 @@ class SiteMapGenerator {
 
 
 	public function generateSiteMap() {
+    $file_db = new PDO('sqlite:../db/history.sqlite3');
+    $result = $file_db->query('SELECT MAX(id) FROM websites')->fetch();
 
 		$links="" ;
-        $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+    $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
 
-        if(file_exists("../sitemap/".$txtsite.".txt")){
-            $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");
-            return $txtsitemap;
-        }
-        else{
-			foreach($this->hash as $url=>$title) {
-            	if(preg_match('/\?/', $url))
-                    $links .= '<span class="icon-ok"></span> <span class="green">'.$url.'</span><div class="resultsql"></div>';
-           	    else
-                    $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
-            }
-
-            $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
-            file_put_contents("../sitemap/".$txtsite.".txt",$links );
-            return $links;
-        }
+    if(file_exists("../sitemap/".$txtsite.".txt")){
+      $txtsitemap = file_get_contents("../sitemap/".$txtsite.".txt");
+      $txtsitemap .= "<input type='hidden' id='site_id' name='site_id' value='" . $result[0]  . "' />";
+      return $txtsitemap;
+    }else{
+  		foreach($this->hash as $url=>$title) {
+      	if(preg_match('/\?/', $url))
+              $links .= '<span class="icon-ok"></span> <span class="green">'.$url.'</span><div class="resultsql"></div>';
+     	    else
+              $links .= '<span class="icon-remove"></span> <span class="red">'.$url.'</span><br />';
+      }
+      $txtsite = strtolower(str_replace(array("http://", "/"), "", $this->site));
+      file_put_contents("../sitemap/".$txtsite.".txt",$links );
+      return $links."<input type='hidden' id='site_id' name='site_id' value='" . $result[0]  . "' />";
+    }
 	}
 }
 ?>
