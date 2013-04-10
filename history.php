@@ -27,48 +27,70 @@
                 <fieldset>
                     <legend><p>History <span class='icon-file'></span></p></legend>
                     <span class="help-block">Here is the history of your tests.</span>
-                    <div class="hero-unit" style="background-color: #FFF;">
+                    <br />
+                    <ul id="history-tabs" class="nav nav-tabs">
+                      <li class="active"><a href="#websites" data-toggle="tab">Websites</a></li>
+                      <li><a href="#direct-links" data-toggle="tab">Direct links</a></li>
+                    </ul>
+                    <div id="display-history" class="hero-unit" style="background-color: #FFF;">
                       <div class="row-fluid">
-                        <div class="accordion" id="accordion">
-                          <?php
-                          $websites = $file_db->query('SELECT * FROM websites');
-                          foreach($websites as $website) {
-                          ?>
-                          <div class="accordion-group">
-                            <div class="accordion-heading">
-                              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse<?php echo $website['id'] ?>">
-                                <?php echo  $website['name']; ?>
-                                <?php echo "<span class='pull-right'>" . date("m/d/Y", $website['time']) . "</span>"; ?>
-                              </a>
-                            </div>
-                            <div id="collapse<?php echo $website['id'] ?>" class="accordion-body collapse in">
-                              <div class="accordion-inner">
-                                <table class="table table-striped">
-                                  <?php
-                                  $links = $file_db->query("SELECT * FROM links WHERE website_id ='". $website['id']. "'");
-                                  foreach($links as $link) {
-                                    echo "<tr>";
-                                    echo "<td>" . $link['url'] . "</td>";
-                                    if($link['success'] == 1){
-                                      echo "<td><span class='label label-success'>Successed</td>";
-                                    }else{
-                                      echo "<td><span class='label label-important'>Failed</td>";
+                        <div class="tab-content">
+                          <div id="websites" class="tab-pane active accordion">
+                            <?php
+                            $websites = $file_db->query('SELECT * FROM websites');
+                            foreach($websites as $website) {
+                            ?>
+                            <div class="accordion-group">
+                              <div class="accordion-heading">
+                                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-websites" href="#collapse<?php echo $website['id'] ?>">
+                                  <?php echo  $website['name']; ?>
+                                  <?php echo "<span class='pull-right'>" . date("m/d/Y", $website['time']) . "</span>"; ?>
+                                </a>
+                              </div>
+                              <div id="collapse<?php echo $website['id'] ?>" class="accordion-body collapse in">
+                                <div class="accordion-inner">
+                                  <table class="table table-striped">
+                                    <?php
+                                    $links = $file_db->query("SELECT * FROM links WHERE website_id ='". $website['id']. "'");
+                                    foreach($links as $link) {
+                                      echo "<tr>";
+                                      echo "<td>" . $link['url'] . "</td>";
+                                      if($link['success'] == 1){
+                                        echo "<td><span class='label label-success'>Successed</td>";
+                                      }else{
+                                        echo "<td><span class='label label-important'>Failed</span></td>";
+                                      }
+                                      echo "</tr>";
                                     }
-                                    echo "</span>";
-                                    echo "</tr>";
-                                  }
-                                  ?>
-                                </table>
+                                    ?>
+                                  </table>
+                                </div>
                               </div>
                             </div>
+
+                            <?php
+                            }
+                            ?>
                           </div>
 
-                          <?php
-                          }
-                          ?>
+                          <div id="direct-links" class="tab-pane">
+                            <table class="table table-striped">
+                              <?php
+                              $links = $file_db->query("SELECT * FROM links WHERE website_id ='". $website['id']. "'");
+                              foreach($links as $link) {
+                                echo "<tr>";
+                                echo "<td>" . $link['url'] . "</td>";
+                                if($link['success'] == 1){
+                                  echo "<td><span class='label label-success'>Successed</td>";
+                                }else{
+                                  echo "<td><span class='label label-important'>Failed</span></td>";
+                                }
+                                echo "</tr>";
+                              }
+                              ?>
+                            </table>
+                          </div>
                         </div>
-                        <table class="table table-stripped">
-                        </table>
                       </div>
                     </div>
                 </fieldset>

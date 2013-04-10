@@ -232,3 +232,15 @@ background-color:#FFFFFF}
   overflow: auto;
   background-color: #EEEEEE;
 }
+
+ul#history-tabs{
+  margin-bottom: 0px;
+}
+
+div#display-history{
+  border-radius: 0px;
+  border: 1px solid #ddd;
+  border-top: none;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}

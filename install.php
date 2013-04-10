@@ -28,7 +28,7 @@
         <div class="container" >
             <div class="row span12" style="text-align: center; ">
                 <?php
-                // OS detection 
+                // OS detection
                 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                     $win = true;
                 } else {
@@ -41,7 +41,7 @@
                 } else {
                     echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ; margin-bottom : 20px; "  >OS Base : Unix</div>';
                 }
-                
+
                  // Version of PHP
                 $version = explode('.', PHP_VERSION);
 
@@ -51,14 +51,14 @@
                     echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >PHP Version not up to date (request 5.0.0 or more)</div>';
                 }
 
-                // SQLMap Detection 
+                // SQLMap Detection
                 if (file_exists('modules/sqlmap')) {
                     echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >SQLMap found </div>';
                 } else {
                     echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >SQLMap not found ! </div>';
                 }
 
-                // Detection of SQLite 
+                // Detection of SQLite
                 if (extension_loaded('pdo_sqlite')) {
                     echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >SQLite 3 supported</div>';
                 } else {
@@ -73,15 +73,17 @@
                     if (extension_loaded('pdo_sqlite')) {
                         $file_db = new PDO('sqlite:db/history.sqlite3');
                         $file_db->exec('CREATE TABLE IF NOT EXISTS websites (id INTEGER PRIMARY KEY, name TEXT, time TEXT)');
-                        $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER, success BOOLEAN)');
+                        $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER, success INTEGER)');
+                        $file_db->exec('CREATE TABLE IF NOT EXISTS unique_links (id INTEGER PRIMARY KEY, url TEXT, success INTEGER, time TEXT)');
+                        $file_db->exec('CREATE TABLE IF NOT EXISTS google_dorks (id INTEGER PRIMARY KEY, url TEXT, success INTEGER, time TEXT)');
                         echo '<div class="label label-warning" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >History-SQLite not found -> database created</div>';
                     } else {
                         echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >History-SQLite not found -> SQLite 3 not supported, impossible to create the database</div>';
                     }
                 }
 
-               
-                ?>   
+
+                ?>
             </div>
             <?php require_once("include/footer.php"); ?>
         </div>
