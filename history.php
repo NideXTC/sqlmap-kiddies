@@ -37,7 +37,7 @@
                             <div class="accordion-heading">
                               <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse<?php echo $row['id'] ?>">
                                 <?php echo  $row['name']; ?>
-                                <?php echo "<span class='pull-right'>" . $row['time'] . "</span>"; ?>
+                                <?php echo "<span class='pull-right'>" . date("m/d/Y", $row['time']) . "</span>"; ?>
                               </a>
                             </div>
                             <div id="collapse<?php echo $row['id'] ?>" class="accordion-body collapse in">
