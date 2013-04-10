@@ -22,7 +22,7 @@
     </head>
     <body>
         <?php
-        $page = "index";
+        $page = "install";
         require_once("include/menu.php");
         ?>
         <div class="container" >
