@@ -21,6 +21,9 @@
 				<div class="row">
 					<h4>Optimization</h4>
 
+					<label class="checkbox span2" for="predictive-output">
+						<input type="checkbox" id="predictive-output" name="predictive-output" />Predictive utput
+					</label>
 					<label class="checkbox span2" for="keep-alive">
 						<input type="checkbox" id="keep-alive" name="keep-alive" />Keep Alive
 					</label>
@@ -32,12 +35,32 @@
 				<div class="row">
 					<h4>Injection</h4>
 
+					<label class="select span2" for="dbms">
+						<select name="dbms" id="dbms" class="input-small">
+							<option value="">All</option>
+							<option value="MySQL">MySQL</option>
+							<option value="Oracle">Oracle</option>
+							<option value="PostgreSQL">PostgreSQL</option>
+							<option value="Microsoft SQL Server">Microsoft SQL Server</option>
+							<option value="Microsoft Access">Microsoft Access</option>
+							<option value="SQLite">SQLite</option>
+							<option value="Firebird">Firebird</option>
+							<option value="Sybase">Sybase</option>
+							<option value="SAP MaxDB">SAP MaxDB</option>
+						</select>
+						DBMS
+					</label>
 					<label class="checkbox span2" for="no-cast">
 						<input type="checkbox" id="no-cast" name="no-cast" />No cast
 					</label>
-
 					<label class="checkbox span2" for="no-escape">
 						<input type="checkbox" id="no-escape" name="no-escape" />No escape
+					</label>
+					<label class="checkbox span2" for="invalid-bignum">
+						<input type="checkbox" id="invalid-bignum" name="invalid-bignum" />Invalid bignum
+					</label>
+					<label class="checkbox span2" for="invalid-logical">
+						<input type="checkbox" id="invalid-logical" name="invalid-logical" />Invalid logical
 					</label>
 				</div>
 
@@ -54,7 +77,6 @@
 						</select>
 						Level
 					</label>
-
 					<label class="select span2" for="risk">
 						<select name="risk" id="risk" class="input-mini">
 							<option value="1">1</option>

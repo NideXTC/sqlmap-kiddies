@@ -26,6 +26,7 @@ class SqlMap{
 			$outputList = Command::getLastResults();
 			// On va dire que cette ligne contient normalement le dernier output de sqlmap.py
 			$exitLine = $outputList[count($outputList) - 4];
+			$exitLine2 = $outputList[count($outputList) - 5];
 			$outputLine = 'toto';
 
 			foreach(Command::getLastResults() as $line)
@@ -34,7 +35,7 @@ class SqlMap{
 			$list['returnCmdLine'] = $cmdLine;
 			$list['returnExitLine'] = $exitLine;
 
-			if(!strpos($exitLine, 'CRITICAL')){
+			if(!strpos($exitLine, 'CRITICAL') && !strpos($exitLine2, 'WARNING')){
 				$list['returnCode'] = 0;
 				preg_match("/'(.+)'/", $exitLine, $pregList);
 				//$list['outputData'] = $pregList[1];
