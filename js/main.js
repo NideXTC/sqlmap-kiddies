@@ -52,6 +52,7 @@ function ajax_full_website(){
     }).done(function(msg){
       if($.trim(msg) != "-1" && $.trim(msg) != "0"){
         $("#result").html(msg);
+        var webSiteId = $("#site_id").val();
 
         //SQLMap on each link with GET params
         $(".green").each(function(){
@@ -63,7 +64,7 @@ function ajax_full_website(){
               type: "POST",
               url: "ajax/sqlmap.ajax.php",
               dataType: "json",
-              data: {url : $(this).html() , options : $("#formsqlmap").serializeArray()},
+              data: {url : $(this).html(), options : $("#formsqlmap").serializeArray(), web_site_id : webSiteId},
               success: function(donnees){
                 if(donnees.returnCode < 0){
                   prev.html('Fail ');
