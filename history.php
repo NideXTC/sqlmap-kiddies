@@ -76,7 +76,7 @@
                           <div id="direct-links" class="tab-pane">
                             <table class="table table-striped">
                               <?php
-                              $links = $file_db->query("SELECT * FROM links WHERE website_id ='". $website['id']. "'");
+                              $links = $file_db->query("SELECT * FROM unique_links");
                               foreach($links as $link) {
                                 echo "<tr>";
                                 echo "<td>" . $link['url'] . "</td>";
@@ -85,6 +85,7 @@
                                 }else{
                                   echo "<td><span class='label label-important'>Failed</span></td>";
                                 }
+                                echo "<td>" . date("m/d/Y", $link['time']) . "</td>";
                                 echo "</tr>";
                               }
                               ?>
