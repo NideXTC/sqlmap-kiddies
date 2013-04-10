@@ -1,7 +1,7 @@
 <?php
 
 // PDO DSN connection string
-define('DB_DSN', 'mysql:dbname=;host=');
+define('DB_DSN', 'sqlite:database/history.sqlite3');
 
 // Database username
 define('DB_USERNAME', '');

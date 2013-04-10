@@ -41,6 +41,8 @@
 						<li <?php if($currentPage == 'fullsite') echo 'class="active"'; ?>><a href="<?php echo createUrl('fullsite'); ?>">Full website</a></li>
 						<li <?php if($currentPage == 'googledorks') echo 'class="active"'; ?>><a href="#contact">Google dorks</a></li>
 						<li <?php if($currentPage == 'fuzzer') echo 'class="active"'; ?>><a href="#contact">Fuzzer</a></li>
+						<li class="divider-vertical"></li>
+						<li <?php if($currentPage == 'history') echo 'class="active"'; ?>><a href=<? echo createUrl('history'); ?>>History</a></li>
 					</ul>
 				</div><!--/.nav-collapse -->
 			</div>

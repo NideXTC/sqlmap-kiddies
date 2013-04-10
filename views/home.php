@@ -22,7 +22,7 @@
 					<h4>Optimization</h4>
 
 					<label class="checkbox span2" for="predictive-output">
-						<input type="checkbox" id="predictive-output" name="predictive-output" />Predictive utput
+						<input type="checkbox" id="predictive-output" name="predictive-output" />Predictive output
 					</label>
 					<label class="checkbox span2" for="keep-alive">
 						<input type="checkbox" id="keep-alive" name="keep-alive" />Keep Alive

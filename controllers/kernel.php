@@ -2,9 +2,6 @@
 
 error_reporting(E_ALL);
 
-// Just 4 Fun
-$startTime = microtime(true);
-
 // Load the libraries
 include('./libraries/php/core/Command.php');
 include('./libraries/php/core/Data.php');
@@ -28,7 +25,7 @@ if (MAINTENANCE_MODE == 'enabled'){
 
 try{
 	initializeSystem();
-	//initializeDatabase();
+	initializeDatabase();
 }
 catch(Exception $exception){
 	error($exception);
