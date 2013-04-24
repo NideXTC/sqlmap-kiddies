@@ -10,7 +10,6 @@
         <script src="js/jquery.js"></script>
         <script src="js/bootstrap.min.js"></script>
         <style type="text/css"></style>
-
         <script src="js/main.js"></script>
         <link href="css/bootstrap.css" rel="stylesheet">
         <link href="css/main.css" rel="stylesheet">
@@ -42,7 +41,7 @@
                     echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ; margin-bottom : 20px; "  >OS Base : Unix</div>';
                 }
 
-                 // Version of PHP
+                // Version of PHP
                 $version = explode('.', PHP_VERSION);
 
                 if ($version[0] == '5') {
@@ -72,6 +71,7 @@
 
                     if (extension_loaded('pdo_sqlite')) {
                         $file_db = new PDO('sqlite:db/history.sqlite3');
+                        chmod("db/history.sqlite3", 0777);
                         $file_db->exec('CREATE TABLE IF NOT EXISTS websites (id INTEGER PRIMARY KEY, name TEXT, time TEXT)');
                         $file_db->exec('CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, url TEXT, website_id INTEGER, success INTEGER)');
                         $file_db->exec('CREATE TABLE IF NOT EXISTS unique_links (id INTEGER PRIMARY KEY, url TEXT, success INTEGER, time TEXT)');
@@ -82,10 +82,27 @@
                     }
                 }
 
+                // Detection of Python
+                if ($win) {
+                    if (file_exists('C:\\Python27')) {
+                        echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Python 2.7 found </div>';
+                    } else {
+                        echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Python 2.7 not found (<a target="_blank" href="http://www.python.org/download/">Download</a>)</div>';
+                    }
 
+
+                   
+                    
+                } else {
+                    echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >You\'re on Unix, so who cares of Python </div>';
+                }
+                
+                echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Verify your Python Path </div>';
                 ?>
             </div>
-            <?php require_once("include/footer.php"); ?>
+
+
+<?php require_once("include/footer.php"); ?>
         </div>
     </body>
 </html>

@@ -18,26 +18,60 @@
           <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
-
     <body>
-        <?php $page = "googledork";
-        require_once("include/menu.php"); ?>
+        <?php
+        $page = "googledork";
+        require_once("include/menu.php");
+        $url = isset($_GET['url']) ? $_GET['url'] : '';
+        ?>
         <div class="container">
-            <div class="row"><div class="span12"><div id="alert-cache" class="alert alert-error fade in"><a class="close" data-dismiss="alert">×</a>Thiz page doez not work biatch.</div></div></div>
             <div class="hero-unit">
                 <fieldset>
-                    <legend>Enter your URL<span class='icon-arrow-right'></span></legend>
-                    <input id="url" name="url" type="text" size="50" /><br />
-                    <input id="submit" type="button" name="submit" value="Submit" />
+                    <legend><p>Enter your Dork<span class='icon-arrow-right'></span></p></legend>
+                    <div class="input-prepend input-append"  style="float: left; margin-right: 20px;" >
+                        <span class="add-on">http://</span>
+                        <input class="span4" id="direct_url" type="text" value="<?php echo $url; ?>" required="required">
+                        <span class="add-on">/</span>
+                    </div>
+                    <button id="submitLink" class="btn btn-primary" type="button"/><i class="icon-chevron-right icon-white"></i> Submit</button>
+                    <br />
+                    <br />
+                    <br />
+                    <form id="formsqlmap">
+                      <div class="row">
+                        <label for="dbms" class="span3">Select your database :</label>
+                        <select id="dbms" name="dbms">
+                          <option value="" selected="selected">Choose your DBMS</option>
+                          <option value="--dbms mysql" >MySQL</option>
+                          <option value="--dbms oracle" >Oracle</option>
+                          <option value="--dbms microsoft sql server" >Microsoft SQL Server</option>
+                          <option value="--dbms postgresql" >PostgreSQL</option>
+                          <option value="--dbms microsoft access" >Microsoft Access</option>
+                          <option value="--dbms sqlite" >SQLite</option>
+                          <option value="--dbms firebird" >Firebird</option>
+                          <option value="--dbms sybase" >Sybase</option>
+                          <option value="--dbms sap maxdb" >SAP MaxDB</option>
+                        </select>
+                      </div>
+                      <div class="row">
+                        <label class="span2">Options :</label>
+                        <div class="span9 offset1">
+                          <label for="tor" class="checkbox span2">Activate TOR<input type="checkbox" name="tor" id="tor" value="--tor"  /></label>
+                          <label for="data" class="checkbox span2">Activate POST<input type="checkbox" disabled="disabled" n ame="data" id="data" value="--data" /></label>
+                        </div>
+                        <div class="span9 offset1">
+                          <label for="keepalive" class="checkbox span2">Keep Alive<input type="checkbox" name="keepalive" id="keepalive" value="--keep-alive" /></label>
+                          <label for="nullconnection" class="checkbox span2">Null Connection<input type="checkbox" name="nullconnection" id="nullconnection" value="--null-connection" /></label>
+                        </div>
+                      </div>
+                    </form>
                 </fieldset>
                 <legend>Result<span class='icon-arrow-right'></span></legend>
-                <div class="hero-unit result" id="result"></div>
+                <div class="hero-unit result" id="result">Enter a website URL ...</div>
             </div>
-            <hr>
-            <?php $page = "index";
-            require_once("include/footer.php");
-            ?>
+            <hr />
+
+            <?php require_once("include/footer.php"); ?>
         </div>
     </body>
 </html>
-
