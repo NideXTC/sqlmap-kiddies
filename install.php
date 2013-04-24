@@ -90,14 +90,18 @@
                         echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Python 2.7 not found (<a target="_blank" href="http://www.python.org/download/">Download</a>)</div>';
                     }
 
-
-                   
+                    $path = getenv('PATH');
+                    if (preg_match("#Python#", $path)) {
+                        echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Python 2.7 is in your Path </div>';
+                    } else {
+                      echo '<div class="label label-important" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Python 2.7 is not in yout Path (<a  target="_blank" href="http://softimage.wiki.softimage.com/xsidocs/EnvVars_SettingandUsingEnvironmentVariables.htm">Modify your Path</a>)</div>';   
+                    }
                     
                 } else {
                     echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >You\'re on Unix, so who cares of Python </div>';
                 }
                 
-                echo '<div class="label label-success" style="padding :20px; font-size : 20px;display : block ;margin-bottom : 20px; "  >Verify your Python Path </div>';
+                
                 ?>
             </div>
 
