@@ -56,7 +56,7 @@
                                       echo "<tr>";
                                       echo "<td>" . $link['url'] . "</td>";
                                       if($link['success'] == 1){
-                                        echo "<td><span class='label label-success'>Successed</td>";
+                                        echo "<td><span class='label label-success'>Succeed</td>";
                                       }else{
                                         echo "<td><span class='label label-important'>Failed</span></td>";
                                       }
