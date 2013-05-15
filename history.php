@@ -23,16 +23,27 @@
         <?php $page = "history"; require_once("include/menu.php"); ?>
         <?php $file_db = new PDO('sqlite:db/history.sqlite3'); ?>
         <?php
+          if(isset($_POST['del_history']) && !empty($_POST['del_history'])){
+            $file_db->query('DELETE FROM unique_links');
+            $file_db->query('DELETE FROM websites');
+          }
           $count_websites = $file_db->query('SELECT count(*) FROM websites')->fetch();
           $count_unique_links_succeed = $file_db->query('SELECT count(*) FROM unique_links WHERE success = 1')->fetch();
           $count_unique_links_failed = $file_db->query('SELECT count(*) FROM unique_links WHERE success = 0')->fetch();
+          $all_entries_count = $count_websites[0] + $count_unique_links_failed[0] + $count_unique_links_succeed[0];
         ?>
         <div class="container">
             <div class="hero-unit">
                 <fieldset>
                     <legend><p>History <span class='icon-file'></span></p></legend>
                     <span class="help-block">Here is the history of your tests.</span>
+                    <form method="POST" id="del_history_form">
+                      <button class="btn btn-danger" name="del_history" value="del_history" type="submit"/><i class="icon-trash icon-white"></i> Delete history</button>
+                    </form>
                     <br />
+                    <?php
+                    if($all_entries_count > 0){
+                    ?>
                     <ul id="history-tabs" class="nav nav-tabs">
                       <li class="active">
                         <a href="#websites" data-toggle="tab">
@@ -110,6 +121,19 @@
                         </div>
                       </div>
                     </div>
+                    <?php
+                    }else{
+                    ?>
+                      <div class="hero-unit" style="background-color: #FFF;">
+                        <div class="row-fluid">
+                          <div class="span12">
+                            <p>No record was found.</p>
+                          </div>
+                        </div>
+                      </div>
+                    <?php
+                    }
+                    ?>
                 </fieldset>
             </div>
             <hr />
