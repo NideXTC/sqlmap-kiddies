@@ -27,9 +27,16 @@
           <div class="span12">
             <fieldset>
               <legend><p>Cache settings <span class=' icon-folder-open'></span></p></legend>
-              <span class="help-block">Select the sitemaps you want to delete</span>
-              <div class="row-fluid">
+              <div class="row_fluid">
                 <div class="span6">
+                  <span class="help-block">Select the sitemaps you want to delete</span>
+                </div>
+                <div class="span6">
+                  <button id="delCache" class="btn btn-danger pull-right" type="button"/><i class="icon-trash icon-white"></i> Delete Cache</button>
+                </div>
+              </div>
+              <div class="row-fluid">
+                <div class="span12">
                   <p>Websites</p>
                   <label class="checkbox">
                     <input id="select-all" type="checkbox" />All sitemaps
@@ -50,8 +57,6 @@
                   ?>
                 </div>
               </div>
-              <br />
-              <button id="delCache" class="btn btn-danger" type="button"/><i class="icon-trash icon-white"></i> Delete Cache</button>
             </fieldset>
           </div>
         </div>

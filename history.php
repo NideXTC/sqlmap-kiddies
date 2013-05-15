@@ -25,6 +25,7 @@
         <?php
           if(isset($_POST['del_history']) && !empty($_POST['del_history'])){
             $file_db->query('DELETE FROM unique_links');
+            $file_db->query('DELETE FROM links');
             $file_db->query('DELETE FROM websites');
           }
           $count_websites = $file_db->query('SELECT count(*) FROM websites')->fetch();
@@ -33,6 +34,19 @@
           $all_entries_count = $count_websites[0] + $count_unique_links_failed[0] + $count_unique_links_succeed[0];
         ?>
         <div class="container">
+            <?php
+            if(isset($_POST['del_history']) && !empty($_POST['del_history'])){
+            ?>
+            <div class="row-fluid">
+              <div class="span12">
+                <div id="alert-cache" class="alert alert-success fade in">
+                  <a class="close" data-dismiss="alert">×</a>History has been correctly deleted
+                </div>
+              </div>
+            </div>
+            <?php
+            }
+            ?>
             <div class="hero-unit">
                 <fieldset>
                     <legend><p>History <span class='icon-file'></span></p></legend>
@@ -42,7 +56,7 @@
                       </div>
                       <div class="span6">
                         <form method="POST" id="del_history_form">
-                          <button class="btn btn-danger pull-right" name="del_history" value="del_history" type="submit"/><i class="icon-trash icon-white"></i> Delete history</button>
+                          <button id="delete_history" class="btn btn-danger pull-right" name="del_history" value="del_history" type="submit"/><i class="icon-trash icon-white"></i> Delete history</button>
                         </form>
                       </div>
                     </div>
