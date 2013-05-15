@@ -22,6 +22,10 @@
     <body>
         <?php $page = "history"; require_once("include/menu.php"); ?>
         <?php $file_db = new PDO('sqlite:db/history.sqlite3'); ?>
+        <?php
+          $count_websites = $file_db->query('SELECT count(*) FROM websites')->fetch();
+          $count_unique_links = $file_db->query('SELECT count(*) FROM unique_links')->fetch();
+        ?>
         <div class="container">
             <div class="hero-unit">
                 <fieldset>
@@ -29,8 +33,18 @@
                     <span class="help-block">Here is the history of your tests.</span>
                     <br />
                     <ul id="history-tabs" class="nav nav-tabs">
-                      <li class="active"><a href="#websites" data-toggle="tab">Websites</a></li>
-                      <li><a href="#direct-links" data-toggle="tab">Direct links</a></li>
+                      <li class="active">
+                        <a href="#websites" data-toggle="tab">
+                          Websites
+                          <span class="badge badge-inverse"><?php echo $count_websites[0]; ?></span>
+                        </a>
+                      </li>
+                      <li>
+                        <a href="#direct-links" data-toggle="tab">
+                          Direct links
+                          <span class="badge badge-inverse"><?php echo $count_unique_links[0]; ?></span>
+                        </a>
+                      </li>
                     </ul>
                     <div id="display-history" class="hero-unit" style="background-color: #FFF;">
                       <div class="row-fluid">
