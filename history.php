@@ -24,7 +24,8 @@
         <?php $file_db = new PDO('sqlite:db/history.sqlite3'); ?>
         <?php
           $count_websites = $file_db->query('SELECT count(*) FROM websites')->fetch();
-          $count_unique_links = $file_db->query('SELECT count(*) FROM unique_links')->fetch();
+          $count_unique_links_succeed = $file_db->query('SELECT count(*) FROM unique_links WHERE success = 1')->fetch();
+          $count_unique_links_failed = $file_db->query('SELECT count(*) FROM unique_links WHERE success = 0')->fetch();
         ?>
         <div class="container">
             <div class="hero-unit">
@@ -42,7 +43,8 @@
                       <li>
                         <a href="#direct-links" data-toggle="tab">
                           Direct links
-                          <span class="badge badge-inverse"><?php echo $count_unique_links[0]; ?></span>
+                          <span class="badge badge-success"><?php echo $count_unique_links_succeed[0]; ?></span>
+                          <span class="badge badge-important"><?php echo $count_unique_links_failed[0]; ?></span>
                         </a>
                       </li>
                     </ul>
