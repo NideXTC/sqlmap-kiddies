@@ -57,6 +57,7 @@ from lib.core.convert import base64unpickle
 from lib.core.data import conf
 from lib.core.data import kb
 from lib.core.data import logger
+from lib.core.data import mergedOptions
 from lib.core.data import queries
 from lib.core.datatype import AttribDict
 from lib.core.datatype import InjectionDict
@@ -244,7 +245,7 @@ def _feedTargetsDict(reqFile, addedTargetUrls):
             if not re.search(r"^[\n]*(%s).*?\sHTTP\/" % "|".join(getPublicTypeMembers(HTTPMETHOD, True)), request, re.I | re.M):
                 continue
 
-            if re.search(r"^[\n]*(%s|%s).*?\.(%s)\sHTTP\/" % (HTTPMETHOD.GET, HTTPMETHOD.POST, "|".join(CRAWL_EXCLUDE_EXTENSIONS)), request, re.I | re.M):
+            if re.search(r"^[\n]*%s.*?\.(%s)\sHTTP\/" % (HTTPMETHOD.GET, "|".join(CRAWL_EXCLUDE_EXTENSIONS)), request, re.I | re.M):
                 continue
 
             getPostReq = False
@@ -813,7 +814,7 @@ def _setDBMS():
 
     if conf.dbms not in SUPPORTED_DBMS:
         errMsg = "you provided an unsupported back-end database management "
-        errMsg += "system. The supported DBMS are %s. " % ', '.join([d for d in DBMS_DICT])
+        errMsg += "system. The supported DBMS are %s. " % ', '.join([_ for _ in DBMS_DICT])
         errMsg += "If you do not know the back-end DBMS, do not provide "
         errMsg += "it and sqlmap will fingerprint it for you."
         raise SqlmapUnsupportedDBMSException(errMsg)
@@ -1854,6 +1855,8 @@ def _mergeOptions(inputOptions, overrideOptions):
         if hasattr(conf, key) and conf[key] is None:
             conf[key] = value
 
+    mergedOptions.update(conf)
+
 def _setTrafficOutputFP():
     if conf.trafficFile:
         infoMsg = "setting file for logging HTTP traffic"
@@ -1992,6 +1995,10 @@ def _basicOptionValidation():
         errMsg = "switch '--text-only' is incompatible with switch '--null-connection'"
         raise SqlmapSyntaxException(errMsg)
 
+    if conf.direct and conf.url:
+        errMsg = "option '-d' is incompatible with option '-u' ('--url')"
+        raise SqlmapSyntaxException(errMsg)
+
     if conf.titles and conf.nullConnection:
         errMsg = "switch '--titles' is incompatible with switch '--null-connection'"
         raise SqlmapSyntaxException(errMsg)
@@ -2033,11 +2040,23 @@ def _basicOptionValidation():
         raise SqlmapSyntaxException(errMsg)
 
     if conf.forms and not any((conf.url, conf.bulkFile)):
-        errMsg = "switch '--forms' requires usage of option '-u' (--url) or '-m'"
+        errMsg = "switch '--forms' requires usage of option '-u' ('--url') or '-m'"
         raise SqlmapSyntaxException(errMsg)
 
     if conf.requestFile and conf.url:
-        errMsg = "option '-r' is incompatible with option '-u' (--url)"
+        errMsg = "option '-r' is incompatible with option '-u' ('--url')"
+        raise SqlmapSyntaxException(errMsg)
+
+    if conf.direct and conf.proxy:
+        errMsg = "option '-d' is incompatible with option '--proxy'"
+        raise SqlmapSyntaxException(errMsg)
+
+    if conf.direct and conf.tor:
+        errMsg = "option '-d' is incompatible with switch '--tor'"
+        raise SqlmapSyntaxException(errMsg)
+
+    if not conf.tech:
+        errMsg = "option '--technique' can't be empty"
         raise SqlmapSyntaxException(errMsg)
 
     if conf.tor and conf.ignoreProxy:
@@ -2077,7 +2096,7 @@ def _basicOptionValidation():
         raise SqlmapSyntaxException(errMsg)
 
     if conf.forms and any([conf.logFile, conf.direct, conf.requestFile, conf.googleDork]):
-        errMsg = "switch '--forms' is compatible only with options '-u' (--url) and '-m'"
+        errMsg = "switch '--forms' is compatible only with options '-u' ('--url') and '-m'"
         raise SqlmapSyntaxException(errMsg)
 
     if conf.timeSec < 1:
@@ -2093,6 +2112,11 @@ def _basicOptionValidation():
             errMsg = "value for option '--union-cols' must be a range with hyphon "
             errMsg += "(e.g. 1-10) or integer value (e.g. 5)"
             raise SqlmapSyntaxException(errMsg)
+
+    if conf.dbmsCred and ':' not in conf.dbmsCred:
+        errMsg = "value for option '--dbms-cred' must be in "
+        errMsg += "format <username>:<password> (e.g. \"root:pass\")"
+        raise SqlmapSyntaxException(errMsg)
 
     if conf.charset:
         _ = checkCharEncoding(conf.charset, False)

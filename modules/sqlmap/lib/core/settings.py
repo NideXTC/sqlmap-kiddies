@@ -13,6 +13,7 @@ import sys
 
 from lib.core.enums import DBMS
 from lib.core.enums import DBMS_DIRECTORY_NAME
+from lib.core.enums import OS
 from lib.core.revision import getRevisionNumber
 
 # sqlmap version and site
@@ -57,6 +58,9 @@ GOOGLE_REGEX = r"url\?\w+=((?![^>]+webcache\.googleusercontent\.com)http[^>]+)&(
 
 # Regular expression used for extracting content from "textual" tags
 TEXT_TAG_REGEX = r"(?si)<(abbr|acronym|b|blockquote|br|center|cite|code|dt|em|font|h\d|i|li|p|pre|q|strong|sub|sup|td|th|title|tt|u)(?!\w).*?>(?P<result>[^<]+)"
+
+# Regular expression used for recognition of IP addresses
+IP_ADDRESS_REGEX = r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"
 
 # Dumping characters used in GROUP_CONCAT MySQL technique
 CONCAT_ROW_DELIMITER = ','
@@ -319,6 +323,9 @@ HASH_MOD_ITEM_DISPLAY = 11
 # Maximum integer value
 MAX_INT = sys.maxint
 
+# Options that need to be restored in multiple targets run mode
+RESTORE_MERGED_OPTIONS = ("col", "db", "dnsName", "privEsc", "tbl", "regexp", "string", "textOnly", "threads", "timeSec", "tmpPath", "uChar", "user")
+
 # Parameters to be ignored in detection phase (upper case)
 IGNORE_PARAMETERS = ("__VIEWSTATE", "__VIEWSTATEENCRYPTED", "__EVENTARGUMENT", "__EVENTTARGET", "__EVENTVALIDATION", "ASPSESSIONID", "ASP.NET_SESSIONID", "JSESSIONID", "CFID", "CFTOKEN")
 
@@ -430,6 +437,9 @@ DEFAULT_GET_POST_DELIMITER = '&'
 # Default delimiter in cookie values
 DEFAULT_COOKIE_DELIMITER = ';'
 
+# Unix timestamp used for forcing cookie expiration when provided with --load-cookies
+FORCE_COOKIE_EXPIRATION_TIME = "9999999999"
+
 # Skip unforced HashDB flush requests below the threshold number of cached items
 HASHDB_FLUSH_THRESHOLD = 32
 
@@ -485,7 +495,7 @@ CHECK_ZERO_COLUMNS_THRESHOLD = 10
 BOLD_PATTERNS = ("' injectable", "might be injectable", "' is vulnerable", "is not injectable", "test failed", "test passed", "live test final result", "test shows that")
 
 # Generic www root directory names
-GENERIC_DOC_ROOT_DIRECTORY_NAMES = ("htdocs", "wwwroot", "www")
+GENERIC_DOC_ROOT_DIRECTORY_NAMES = ("htdocs", "httpdocs", "public", "wwwroot", "www")
 
 # Maximum length of a help part containing switch/option name(s)
 MAX_HELP_OPTION_LENGTH = 18
@@ -540,6 +550,18 @@ METASPLOIT_SESSION_TIMEOUT = 180
 
 # Reference: http://www.cookiecentral.com/faq/#3.5
 NETSCAPE_FORMAT_HEADER_COOKIES = "# Netscape HTTP Cookie File."
+
+# Prefixes used in brute force search for web server document root
+BRUTE_DOC_ROOT_PREFIXES = {
+    OS.LINUX: ("/var/www", "/var/www/%TARGET%", "/var/www/vhosts/%TARGET%", "/var/www/virtual/%TARGET%", "/var/www/clients/vhosts/%TARGET%", "/var/www/clients/virtual/%TARGET%"),
+    OS.WINDOWS: ("/xampp", "/Program Files/xampp/", "/wamp", "/Program Files/wampp/", "/Inetpub/wwwroot", "/Inetpub/wwwroot/%TARGET%", "/Inetpub/vhosts/%TARGET%")
+}
+
+# Suffixes used in brute force search for web server document root
+BRUTE_DOC_ROOT_SUFFIXES = ("", "html", "htdocs", "httpdocs", "php", "public", "src", "site", "build", "web", "sites/all", "www/build")
+
+# String used for marking target name inside used brute force web server document root
+BRUTE_DOC_ROOT_TARGET_MARK = "%TARGET%"
 
 # CSS style used in HTML dump format
 HTML_DUMP_CSS_STYLE = """<style>

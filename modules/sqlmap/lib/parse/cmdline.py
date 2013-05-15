@@ -47,8 +47,7 @@ def cmdLineParser():
 
         # Target options
         target = OptionGroup(parser, "Target", "At least one of these "
-                             "options has to be specified to set the source "
-                             "to get target URLs from")
+                             "options has to be provided to set the target(s)")
 
         target.add_option("-d", dest="direct", help="Direct "
                           "connection to the database")
@@ -128,6 +127,20 @@ def cmdLineParser():
         request.add_option("--ignore-proxy", dest="ignoreProxy", action="store_true",
                            help="Ignore system default HTTP proxy")
 
+        request.add_option("--tor", dest="tor",
+                                  action="store_true",
+                                  help="Use Tor anonymity network")
+
+        request.add_option("--tor-port", dest="torPort",
+                                  help="Set Tor proxy port other than default")
+
+        request.add_option("--tor-type", dest="torType",
+                                  help="Set Tor proxy type (HTTP (default), SOCKS4 or SOCKS5)")
+
+        request.add_option("--check-tor", dest="checkTor",
+                                  action="store_true",
+                                  help="Check to see if Tor is used properly")
+
         request.add_option("--delay", dest="delay", type="float",
                            help="Delay in seconds between each HTTP request")
 
@@ -142,9 +155,6 @@ def cmdLineParser():
         request.add_option("--randomize", dest="rParam",
                            help="Randomly change value for given parameter(s)")
 
-        request.add_option("--scope", dest="scope",
-                           help="Regexp to filter targets from provided proxy log")
-
         request.add_option("--safe-url", dest="safUrl",
                            help="URL address to visit frequently during testing")
 
@@ -154,6 +164,14 @@ def cmdLineParser():
         request.add_option("--skip-urlencode", dest="skipUrlEncode",
                            action="store_true",
                            help="Skip URL encoding of payload data")
+
+        request.add_option("--force-ssl", dest="forceSSL",
+                           action="store_true",
+                           help="Force usage of SSL/HTTPS")
+
+        request.add_option("--hpp", dest="hpp",
+                                  action="store_true",
+                                  help="Use HTTP parameter pollution")
 
         request.add_option("--eval", dest="evalCode",
                            help="Evaluate provided Python code before the request (e.g. \"import hashlib;id2=hashlib.md5(id).hexdigest()\")")
@@ -195,6 +213,9 @@ def cmdLineParser():
         injection.add_option("--dbms", dest="dbms",
                              help="Force back-end DBMS to this value")
 
+        injection.add_option("--dbms-cred", dest="dbmsCred",
+                            help="DBMS authentication credentials (user:password)")
+
         injection.add_option("--os", dest="os",
                              help="Force back-end DBMS operating system "
                                   "to this value")
@@ -226,10 +247,7 @@ def cmdLineParser():
 
         # Detection options
         detection = OptionGroup(parser, "Detection", "These options can be "
-                                "used to specify how to parse "
-                                "and compare page content from "
-                                "HTTP responses when using blind SQL "
-                                "injection technique")
+                                "used to customize the detection phase")
 
         detection.add_option("--level", dest="level", type="int",
                              help="Level of tests to perform (1-5, "
@@ -538,19 +556,12 @@ def cmdLineParser():
         general.add_option("--charset", dest="charset",
                             help="Force character encoding used for data retrieval")
 
-        general.add_option("--check-tor", dest="checkTor",
-                                  action="store_true",
-                                  help="Check to see if Tor is used properly")
-
         general.add_option("--crawl", dest="crawlDepth", type="int",
                                   help="Crawl the website starting from the target URL")
 
         general.add_option("--csv-del", dest="csvDel",
                                   help="Delimiting character used in CSV output "
                                   "(default \"%s\")" % defaults.csvDel)
-
-        general.add_option("--dbms-cred", dest="dbmsCred",
-                            help="DBMS authentication credentials (user:password)")
 
         general.add_option("--dump-format", dest="dumpFormat",
                                   help="Format of dumped data (CSV (default), HTML or SQLITE)")
@@ -564,21 +575,17 @@ def cmdLineParser():
                             action="store_true",
                             help="Flush session files for current target")
 
-        general.add_option("--force-ssl", dest="forceSSL",
-                           action="store_true",
-                           help="Force usage of SSL/HTTPS requests")
-
         general.add_option("--forms", dest="forms",
                                   action="store_true",
                                   help="Parse and test forms on target URL")
 
         general.add_option("--fresh-queries", dest="freshQueries",
                             action="store_true",
-                            help="Ignores query results stored in session file")
+                            help="Ignore query results stored in session file")
 
         general.add_option("--hex", dest="hexConvert",
                             action="store_true",
-                            help="Uses DBMS hex function(s) for data retrieval")
+                            help="Use DBMS hex function(s) for data retrieval")
 
         general.add_option("--output-dir", dest="oDir",
                             action="store",
@@ -588,19 +595,18 @@ def cmdLineParser():
                                   action="store_true",
                                   help="Parse and display DBMS error messages from responses")
 
+        general.add_option("--pivot-column", dest="pivotColumn",
+                               help="Pivot column name")
+
         general.add_option("--save", dest="saveCmdline",
                             action="store_true",
                             help="Save options to a configuration INI file")
 
-        general.add_option("--tor", dest="tor",
-                                  action="store_true",
-                                  help="Use Tor anonymity network")
+        general.add_option("--scope", dest="scope",
+                           help="Regexp to filter targets from provided proxy log")
 
-        general.add_option("--tor-port", dest="torPort",
-                                  help="Set Tor proxy port other than default")
-
-        general.add_option("--tor-type", dest="torType",
-                                  help="Set Tor proxy type (HTTP (default), SOCKS4 or SOCKS5)")
+        general.add_option("--test-filter", dest="testFilter",
+                           help="Select tests by payloads and/or titles (e.g. ROW)")
 
         general.add_option("--update", dest="updateAll",
                             action="store_true",
@@ -641,10 +647,6 @@ def cmdLineParser():
         miscellaneous.add_option("--gpage", dest="googlePage", type="int",
                                   help="Use Google dork results from specified page number")
 
-        miscellaneous.add_option("--hpp", dest="hpp",
-                                  action="store_true",
-                                  help="Use HTTP parameter pollution")
-
         miscellaneous.add_option("--identify-waf", dest="identifyWaf",
                                   action="store_true",
                                   help="Make a through testing for a WAF/IPS/IDS protection")
@@ -664,9 +666,6 @@ def cmdLineParser():
         miscellaneous.add_option("--smart", dest="smart",
                                   action="store_true",
                                   help="Conduct through tests only if positive heuristic(s)")
-
-        miscellaneous.add_option("--test-filter", dest="testFilter",
-                                  help="Select tests by payloads and/or titles (e.g. ROW)")
 
         miscellaneous.add_option("--wizard", dest="wizard",
                                   action="store_true",

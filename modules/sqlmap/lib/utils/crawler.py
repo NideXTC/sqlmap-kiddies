@@ -27,6 +27,7 @@ from thirdparty.oset.pyoset import oset
 
 def crawl(target):
     try:
+        visited = set()
         threadData = getCurrentThreadData()
         threadData.shared.value = oset()
 
@@ -37,6 +38,10 @@ def crawl(target):
                 with kb.locks.limit:
                     if threadData.shared.unprocessed:
                         current = threadData.shared.unprocessed.pop()
+                        if current in visited:
+                            continue
+                        else:
+                            visited.add(current)
                     else:
                         break
 
@@ -72,7 +77,9 @@ def crawl(target):
                             href = tag.get("href") if hasattr(tag, "get") else tag.group("href")
 
                             if href:
-                                url = urlparse.urljoin(target, href)
+                                if threadData.lastRedirectURL and threadData.lastRedirectURL[0] == threadData.lastRequestUID:
+                                    current = threadData.lastRedirectURL[1]
+                                url = urlparse.urljoin(current, href)
 
                                 # flag to know if we are dealing with the same target host
                                 _ = reduce(lambda x, y: x == y, map(lambda x: urlparse.urlparse(x).netloc.split(':')[0], (url, target)))

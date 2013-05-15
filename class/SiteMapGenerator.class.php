@@ -80,8 +80,8 @@ class SiteMapGenerator {
         $preg2 = "/<title>(.*?)<\/title>/i";
         $title = array();
         preg_match($preg2, $this->html, $title);
-        var_dump($title);
-        return $title[1];
+        if(isset($title[1])) return $title[1];
+        else return '' ; 
     }
 
     /**

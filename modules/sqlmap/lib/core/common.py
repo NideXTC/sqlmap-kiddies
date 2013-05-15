@@ -82,6 +82,9 @@ from lib.core.exception import SqlmapUserQuitException
 from lib.core.log import LOGGER_HANDLER
 from lib.core.optiondict import optDict
 from lib.core.settings import BOLD_PATTERNS
+from lib.core.settings import BRUTE_DOC_ROOT_PREFIXES
+from lib.core.settings import BRUTE_DOC_ROOT_SUFFIXES
+from lib.core.settings import BRUTE_DOC_ROOT_TARGET_MARK
 from lib.core.settings import CUSTOM_INJECTION_MARK_CHAR
 from lib.core.settings import DBMS_DIRECTORY_DICT
 from lib.core.settings import DEFAULT_COOKIE_DELIMITER
@@ -92,12 +95,14 @@ from lib.core.settings import DUMMY_SQL_INJECTION_CHARS
 from lib.core.settings import DUMMY_USER_INJECTION
 from lib.core.settings import DYNAMICITY_MARK_LENGTH
 from lib.core.settings import ERROR_PARSING_REGEXES
+from lib.core.settings import FORCE_COOKIE_EXPIRATION_TIME
 from lib.core.settings import FORM_SEARCH_REGEX
 from lib.core.settings import GENERIC_DOC_ROOT_DIRECTORY_NAMES
 from lib.core.settings import HASHDB_MILESTONE_VALUE
 from lib.core.settings import HOST_ALIASES
 from lib.core.settings import INFERENCE_UNKNOWN_CHAR
 from lib.core.settings import INVALID_UNICODE_CHAR_FORMAT
+from lib.core.settings import IP_ADDRESS_REGEX
 from lib.core.settings import ISSUES_PAGE
 from lib.core.settings import IS_WIN
 from lib.core.settings import LARGE_OUTPUT_THRESHOLD
@@ -136,6 +141,7 @@ from lib.core.settings import USER_AGENT_ALIASES
 from lib.core.settings import VERSION
 from lib.core.settings import VERSION_STRING
 from lib.core.threads import getCurrentThreadData
+from lib.utils.sqlalchemy import _sqlalchemy
 from thirdparty.clientform.clientform import ParseResponse
 from thirdparty.clientform.clientform import ParseError
 from thirdparty.magic import magic
@@ -539,6 +545,7 @@ def paramToDict(place, parameters=None):
 
             condition = not conf.testParameter
             condition |= parameter in conf.testParameter
+            condition |= place == PLACE.COOKIE and len(intersect((PLACE.COOKIE,), conf.testParameter, True)) > 0
 
             if condition:
                 testableParameters[parameter] = "=".join(parts[1:])
@@ -625,7 +632,7 @@ def getDocRoot():
                         docRoot = "%s%s" % (absFilePath.split(_)[0], _)
                         break
 
-            if pagePath in absFilePath:
+            if pagePath and pagePath in absFilePath:
                 docRoot = absFilePath.split(pagePath)[0]
                 if windowsDriveLetter:
                     docRoot = "%s/%s" % (windowsDriveLetter, ntToPosixSlashes(docRoot))
@@ -642,38 +649,48 @@ def getDocRoot():
 
         docRoot = []
 
-        message = "do you want to provide a text file with a list of "
-        message += "directories to try? [y/N] "
-        answer = readInput(message, default="N")
+        message = "what do you want to use for web server document root?\n"
+        message += "[1] common location(s) '%s' (default)\n" % ", ".join(root for root in defaultDocRoot)
+        message += "[2] custom location\n"
+        message += "[3] custom directory list file\n"
+        message += "[4] brute force search\n"
+        choice = readInput(message, default="1").strip()
 
-        if answer and answer.lower() == "y":
-            message = "please provide the directories list file to try: "
-            dirFilePath = readInput(message)
+        if choice == "2":
+            message = "please provide the web server document root: "
+            docRoot = readInput(message).split(',')
+        elif choice == "3":
+            message = "what's the list file location?\n"
+            listPath = readInput(message)
+            checkFile(listPath)
+            docRoot = getFileItems(listPath)
+        elif choice == "4":
+            targets = set([conf.hostname])
+            _ = conf.hostname.split('.')
 
-            if dirFilePath:
-                if os.path.isfile(dirFilePath):
-                    fd = codecs.open(dirFilePath, "rb", UNICODE_ENCODING)
-
-                    for filepath in fd.readlines():
-                        docRoot.append(normalizePath(filepath))
-
-                else:
-                    errMsg = "provided directory list file %s " % dirFilePath
-                    errMsg += "is not a valid file"
-                    logger.error(errMsg)
-
-        if len(docRoot) == 0:
-            message = "please provide the web server document root "
-            message += "[%s]: " % ", ".join(root for root in defaultDocRoot)
-            inputDocRoot = readInput(message, default=defaultDocRoot)
-
-            if inputDocRoot:
-                if isinstance(inputDocRoot, basestring):
-                    docRoot = inputDocRoot.split(',')
-                else:
-                    docRoot = inputDocRoot
+            if _[0] == "www":
+                targets.add('.'.join(_[1:]))
+                targets.add('.'.join(_[1:-1]))
             else:
-                docRoot = defaultDocRoot
+                targets.add('.'.join(_[:-1]))
+
+            targets = filter(None, targets)
+
+            for prefix in BRUTE_DOC_ROOT_PREFIXES.get(Backend.getOs(), DEFAULT_DOC_ROOTS[OS.LINUX]):
+                if BRUTE_DOC_ROOT_TARGET_MARK in prefix and re.match(IP_ADDRESS_REGEX, conf.hostname):
+                    continue
+
+                for suffix in BRUTE_DOC_ROOT_SUFFIXES:
+                    for target in targets:
+                        item = "%s/%s" % (prefix, suffix)
+                        item = item.replace(BRUTE_DOC_ROOT_TARGET_MARK, target).replace("//", "/")
+                        docRoot.append(item)
+
+                        if BRUTE_DOC_ROOT_TARGET_MARK not in prefix:
+                            break
+
+        else:
+            docRoot = defaultDocRoot
 
     return docRoot
 
@@ -697,19 +714,6 @@ def getDirs():
     webDir = extractRegexResult(r"//[^/]+?/(?P<result>.*)/.", conf.url)
     if webDir:
         directories.add(webDir)
-
-    message = "please provide additional comma separated file paths to "
-    message += "try to upload the agent inside the possible document: "
-    message += "root%s [Enter for None]: " % "s" if len(kb.docRoot) > 1 else ""
-    inputDirs = readInput(message)
-
-    if inputDirs:
-        inputDirs = inputDirs.replace(", ", ",")
-        inputDirs = inputDirs.split(",")
-
-        for inputDir in inputDirs:
-            if inputDir:
-                directories.add(inputDir)
 
     return list(directories)
 
@@ -756,7 +760,7 @@ def setColor(message, bold=False):
         if bold:
             retVal = colored(message, color=None, on_color=None, attrs=("bold",))
         elif level:
-            _ = LOGGER_HANDLER.level_map.get(logging.getLevelName(level))
+            _ = LOGGER_HANDLER.level_map.get(level)
             if _:
                 background, foreground, bold = _
                 retVal = colored(message, color=foreground, on_color="on_%s" % background if background else None, attrs=("bold",) if bold else None)
@@ -1056,8 +1060,11 @@ def parseTargetDirect():
                 conf.dbmsUser = details.group('user')
                 conf.dbmsPass = details.group('pass')
             else:
-                conf.dbmsUser = unicode()
-                conf.dbmsPass = unicode()
+                if conf.dbmsCred:
+                    conf.dbmsUser, conf.dbmsPass = conf.dbmsCred.split(':')
+                else:
+                    conf.dbmsUser = unicode()
+                    conf.dbmsPass = unicode()
 
             if not conf.dbmsPass:
                 conf.dbmsPass = None
@@ -1120,10 +1127,15 @@ def parseTargetDirect():
                 elif dbmsName == DBMS.FIREBIRD:
                     import kinterbasdb
             except ImportError:
-                errMsg = "sqlmap requires '%s' third-party library " % data[1]
-                errMsg += "in order to directly connect to the database "
-                errMsg += "%s. Download from '%s'" % (dbmsName, data[2])
-                raise SqlmapMissingDependence(errMsg)
+                if _sqlalchemy and data[3] in _sqlalchemy.dialects.__all__:
+                    pass
+                else:
+                    errMsg = "sqlmap requires '%s' third-party library " % data[1]
+                    errMsg += "in order to directly connect to the database "
+                    errMsg += "%s. You can download it from '%s'" % (dbmsName, data[2])
+                    errMsg += ". Alternative is to use a package 'python-sqlalchemy' "
+                    errMsg += "with support for dialect '%s' installed" % data[3]
+                    raise SqlmapMissingDependence(errMsg)
 
 def parseTargetUrl():
     """
@@ -2787,7 +2799,7 @@ def intersect(valueA, valueB, lowerCase=False):
     [1, 3]
     """
 
-    retVal = None
+    retVal = []
 
     if valueA and valueB:
         valueA = arrayizeValue(valueA)
@@ -3504,10 +3516,14 @@ def resetCookieJar(cookieJar):
                 handle, filename = tempfile.mkstemp(prefix="sqlmapcj-")
                 os.close(handle)
 
+                # Reference: http://www.hashbangcode.com/blog/netscape-http-cooke-file-parser-php-584.html
                 with open(filename, "w+b") as f:
                     f.write("%s\n" % NETSCAPE_FORMAT_HEADER_COOKIES)
                     for line in lines:
-                        f.write("\n%s" % "\t".join(line.split()))
+                        _ = line.split()
+                        if len(_) == 7:
+                            _[4] = FORCE_COOKIE_EXPIRATION_TIME
+                            f.write("\n%s" % "\t".join(_))
 
                 cookieJar.filename = filename
 
@@ -3526,7 +3542,7 @@ def resetCookieJar(cookieJar):
 
         except cookielib.LoadError, msg:
             errMsg = "there was a problem loading "
-            errMsg += "cookies file ('%s')" % msg
+            errMsg += "cookies file ('%s')" % re.sub(r"(cookies) file '[^']+'", "\g<1>", str(msg))
             raise SqlmapGenericException(errMsg)
 
 def decloakToTemp(filename):

@@ -192,22 +192,22 @@ class Connect(object):
             kb.requestCounter += 1
             threadData.lastRequestUID = kb.requestCounter
 
-        url = kwargs.get("url",                     conf.url)
+        url = kwargs.get("url",                     None) or conf.url
         get = kwargs.get("get",                     None)
         post = kwargs.get("post",                   None)
         method = kwargs.get("method",               None)
         cookie = kwargs.get("cookie",               None)
-        ua = kwargs.get("ua",                       None)
-        referer = kwargs.get("referer",             None)
-        host = kwargs.get("host",                   conf.host)
+        ua = kwargs.get("ua",                       None) or conf.agent
+        referer = kwargs.get("referer",             None) or conf.referer
+        host = kwargs.get("host",                   None) or conf.host
         direct_ = kwargs.get("direct",              False)
         multipart = kwargs.get("multipart",         False)
         silent = kwargs.get("silent",               False)
         raise404 = kwargs.get("raise404",           True)
-        timeout = kwargs.get("timeout",             conf.timeout)
+        timeout = kwargs.get("timeout",             None) or conf.timeout
         auxHeaders = kwargs.get("auxHeaders",       None)
         response = kwargs.get("response",           False)
-        ignoreTimeout = kwargs.get("ignoreTimeout", kb.ignoreTimeout)
+        ignoreTimeout = kwargs.get("ignoreTimeout", False) or kb.ignoreTimeout
         refreshing = kwargs.get("refreshing",       False)
         retrying = kwargs.get("retrying",           False)
         crawling = kwargs.get("crawling",           False)
@@ -226,6 +226,7 @@ class Connect(object):
         # url splitted with space char while urlencoding it in the later phase
         url = url.replace(" ", "%20")
 
+        conn = None
         code = None
         page = None
 
@@ -276,6 +277,10 @@ class Connect(object):
                 pass
 
             elif target:
+                if conf.forceSSL and urlparse.urlparse(url).scheme != "https":
+                    url = re.sub("\Ahttp:", "https:", url, re.I)
+                    url = re.sub(":80/", ":443/", url, re.I)
+
                 if PLACE.GET in conf.parameters and not get:
                     get = conf.parameters[PLACE.GET]
 
@@ -550,7 +555,12 @@ class Connect(object):
 
         processResponse(page, responseHeaders)
 
-        responseMsg += "[#%d] (%d %s):\n" % (threadData.lastRequestUID, code, status)
+        if conn and hasattr(conn, "redcode"):
+            responseMsg += "[#%d] (%d %s):\n" % (threadData.lastRequestUID, conn.code, status)
+            requestMsg = requestMsg.replace("%s HTTP/" % url, "%s HTTP/" % conn.redurl, 1)
+        else:
+            responseMsg += "[#%d] (%d %s):\n" % (threadData.lastRequestUID, code, status)
+
         if responseHeaders:
             logHeaders = "\n".join("%s: %s" % (getUnicode(key.capitalize() if isinstance(key, basestring) else key), getUnicode(value)) for (key, value) in responseHeaders.items())
 
