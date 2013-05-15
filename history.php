@@ -36,10 +36,16 @@
             <div class="hero-unit">
                 <fieldset>
                     <legend><p>History <span class='icon-file'></span></p></legend>
-                    <span class="help-block">Here is the history of your tests.</span>
-                    <form method="POST" id="del_history_form">
-                      <button class="btn btn-danger" name="del_history" value="del_history" type="submit"/><i class="icon-trash icon-white"></i> Delete history</button>
-                    </form>
+                    <div class="row-fluid">
+                      <div class="span6">
+                        <span class="help-block">Here is the history of your tests.</span>
+                      </div>
+                      <div class="span6">
+                        <form method="POST" id="del_history_form">
+                          <button class="btn btn-danger pull-right" name="del_history" value="del_history" type="submit"/><i class="icon-trash icon-white"></i> Delete history</button>
+                        </form>
+                      </div>
+                    </div>
                     <br />
                     <?php
                     if($all_entries_count > 0){
