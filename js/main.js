@@ -9,6 +9,19 @@ $(document).ready(function(){
     delete_cache();
   });
 
+    //===================
+    // DORK
+    $("#website_url").keyup(function(e){
+        if(e.which == 13){
+            ajax_dork();
+        }
+    });
+
+    $("#submitDork").click(function(){
+        ajax_dork();
+    });
+
+
   //===================
   // Full Website
   $("#website_url").keyup(function(e){
@@ -88,14 +101,39 @@ function ajax_full_website(){
 };
 
 function ajax_direct_link(){
+    if($("#direct_url").val() != ""){
+        $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 350px;">Testing URL, it may takes a few minutes... </div>');
+
+        $.ajax({
+            type: "POST",
+            url: "ajax/directLinkSqlmap.ajax.php",
+            dataType: "json",
+            data: {url : "http://" + $("#direct_url").val(), options : $("#formsqlmap").serializeArray()},
+            success: function(donnees){
+                if(donnees.returnCode < 0){
+                    $("#result").html("Bad result :[");
+                }
+                else{
+                    $("#result").html(donnees.message);
+                }
+            }
+        });
+    }else{
+        $("#result").html("The field is empty (don't try to fool me again)");
+    }
+}
+
+
+
+function ajax_dork(){
   if($("#direct_url").val() != ""){
     $("#result").html('<div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div>  <div style="margin-left : 350px;">Testing URL, it may takes a few minutes... </div>');
 
     $.ajax({
       type: "POST",
-      url: "ajax/directLinkSqlmap.ajax.php",
+      url: "ajax/googledork.ajax.php",
       dataType: "json",
-      data: {url : "http://" + $("#direct_url").val(), options : $("#formsqlmap").serializeArray()},
+      data: {url : $("#direct_url").val()},
       success: function(donnees){
         if(donnees.returnCode < 0){
           $("#result").html("Bad result :[");

@@ -31,5 +31,20 @@ class Sqlmap {
         return $returnList;
     }
 
+    public function dork($url) {
+        $returnList = array(
+            'returnCode' => -1,
+            'message' => ''
+        );
+        $cmd = "python ../modules/sqlmap/sqlmap.py -g \"" . $url . "\"  --dump-all  --batch";
+        $returnList['message'] = nl2br(shell_exec($cmd));
+
+
+        if (!strpos($returnList['message'], 'CRITICAL'))
+            $returnList['returnCode'] = 1;
+
+        return $returnList;
+    }
+
 }
 ?>
